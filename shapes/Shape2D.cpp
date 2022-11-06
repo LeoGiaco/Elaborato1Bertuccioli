@@ -224,16 +224,24 @@ void Shape2D::calculateModelIfUpdated()
 	}
 }
 
+void Shape2D::setEnabled(bool enabled)
+{
+	this->enabled = enabled;
+}
+
 void Shape2D::draw()
 {
-	calculateModelIfUpdated();
-	GLint modelId = program->getUsedProgram()->getUniformLocation((char *)"model");
+	if (enabled)
+	{
+		calculateModelIfUpdated();
+		GLint modelId = program->getUsedProgram()->getUniformLocation((char *)"model");
 
-	glUniformMatrix4fv(modelId, 1, GL_FALSE, value_ptr(model));
+		glUniformMatrix4fv(modelId, 1, GL_FALSE, value_ptr(model));
 
-	glBindVertexArray(VAO);
-	glDrawArrays(drawMode, 0, vertices.size());
-	glBindVertexArray(0);
+		glBindVertexArray(VAO);
+		glDrawArrays(drawMode, 0, vertices.size());
+		glBindVertexArray(0);
+	}
 }
 
 Shape2D *Shape2D::circle(GLProgram *program, int nvertices, vec4 centerColor, vec4 color)

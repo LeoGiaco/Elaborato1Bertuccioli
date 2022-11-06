@@ -252,8 +252,11 @@ void ComplexShape2D::calculateModelIfUpdated()
 
 void ComplexShape2D::draw()
 {
-    for (size_t i = 0; i < shapes.size(); i++)
+    if (enabled)
     {
-        shapes[i]->draw();
+        for (size_t i = 0; i < shapes.size(); i++)
+        {
+            shapes[i]->draw();
+        }
     }
 }

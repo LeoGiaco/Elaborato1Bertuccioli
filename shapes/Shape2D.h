@@ -27,6 +27,7 @@ protected:
     bool dynamicDraw;
     bool lockedRotation = false;
     bool updated;
+    bool enabled = true;
 
     void initShape();
 
@@ -123,6 +124,9 @@ public:
     // Creates the shape of a Hermite curve.
     static Shape2D *HermiteCurve(GLProgram *program, int nPieceVertices, vector<vec3> samples, vector<vec2> derivatives,
                                  vec4 color, bool fill = false, vec3 origin = vec3(0, 0, 0), vec4 centerColor = vec4(0, 0, 0, 0));
+
+    // Determines whether the shape has to be drawn on screen.
+    virtual void setEnabled(bool enabled);
 
     // Draws the shape.
     virtual void draw();
