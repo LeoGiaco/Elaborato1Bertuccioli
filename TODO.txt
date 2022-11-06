@@ -1,3 +1,4 @@
-TODO: (magari) campo time, metodi advanceTime e getTime in Shape2D
-TODO: (magari) figure dinamiche
-TODO: (magari) aggiunta IBO (attivabile opzionalmente);
+TODO: rimuovere cose inutili / refactor
+TODO: cambiare colori pezzi barca
+TODO: adattare fragment shader barca
+TODO: creare 3 tipi di nemici
