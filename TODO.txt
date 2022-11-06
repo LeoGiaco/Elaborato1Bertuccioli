@@ -1,3 +1,4 @@
+TODO: rimuovere figure da scena
 TODO: cambiare colori pezzi barca
 TODO: aggiungere onda che si muove
 TODO: aggiungere movimento apparente della nave quando si preme la freccia destra/sinistra, che accelera lo spostamento delle onde
