@@ -1,0 +1,3 @@
+TODO: (magari) campo time, metodi advanceTime e getTime in Shape2D
+TODO: (magari) figure dinamiche
+TODO: (magari) aggiunta IBO (attivabile opzionalmente);
