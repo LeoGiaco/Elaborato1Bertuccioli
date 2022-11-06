@@ -18,10 +18,7 @@ Window w(&program, &scene, WINDOW_WIDTH, WINDOW_HEIGHT, ortho(0.0f, (float)WINDO
 
 mat4 Projection;
 
-vector<vec3> vertices;
-vector<vec4> colors;
-
-Shape *s1, *s2, *s3, *s4, *s5, *c1, *c2;
+Shape *s1, *s2, *s3, *s4, *s5, *sea;
 ComplexShape *cs;
 
 float t = 0;
@@ -50,38 +47,6 @@ void reshapeCallback(int width, int height)
 
 void createShapes()
 {
-#pragma region bruh
-// vertices.push_back(vec3(1.0f, -1.0f, 1.0f));
-// vertices.push_back(vec3(1.0f, 1.0f, 1.0f));
-// vertices.push_back(vec3(1.0f, 1.0f, 1.0f));
-// vertices.push_back(vec3(-1.0f, 1.0f, 1.0f));
-// vertices.push_back(vec3(-1.0f, -1.0f, 1.0f));
-
-// colors.push_back(vec4(1.0f, 0.0f, 0.0f, 1.0f));
-// colors.push_back(vec4(0.0f, 1.0f, 0.0f, 1.0f));
-// colors.push_back(vec4(0.0f, 0.0f, 1.0f, 1.0f));
-// colors.push_back(vec4(0.0f, 0.0f, 1.0f, 1.0f));
-// colors.push_back(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-// colors.push_back(vec4(1.0f, 0.0f, 0.0f, 1.0f));
-
-// s = new Shape(&program, vertices, colors, GL_TRIANGLES);
-// s->setAnchorPosition(400, 400);
-// s->setScale(100);
-// scene.addShape(s);
-
-// s2 = Shape::circle(&program, 6, vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4(0.0f, 0.0f, 1.0f, 1.0f));
-// s2->setAnchorPosition(400, 400);
-// s2->setPosition(-300, 0);
-// s2->setScale(100);
-// s2->setRotation(radians(180.0f));
-// scene.addShape(s2);
-
-// c = Shape::circle(&program, 30, vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4(0.0f, 0.0f, 1.0f, 1.0f));
-// c->setAnchorPosition(400, 400);
-// c->setPosition(300, 0);
-// c->setScale(90);
-// scene.addShape(c);
-#pragma endregion
     ////////// boat
     vector<vec3> samples;
     vector<vec2> derivs;
@@ -179,10 +144,10 @@ void createShapes()
     s5->setPosition(40, 40);
     //////////
 
-    c1 = Shape::circle(&program, 4, vec4(0, 0.3f, 0.75f, 0.8f), vec4(0, 0.3f, 0.75f, 0.8f));
-    c1->rotate(radians(45.0f));
-    c1->setPosition(w.getWidth() / 2.0f, 0);
-    c1->setScale(w.getWidth() / 2.0f * 1.45f);
+    sea = Shape::circle(&program, 4, vec4(0, 0.3f, 0.75f, 0.8f), vec4(0, 0.3f, 0.75f, 0.8f)); // Will become a curve.
+    sea->rotate(radians(45.0f));
+    sea->setPosition(w.getWidth() / 2.0f, 0);
+    sea->setScale(w.getWidth() / 2.0f * 1.45f);
 
     cs = new ComplexShape(&program);
     cs->addShape(s2);
@@ -191,8 +156,9 @@ void createShapes()
     cs->addShape(s5);
     cs->addShape(s4);
     cs->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
+
     scene.addShape(cs);
-    scene.addShape(c1);
+    scene.addShape(sea);
 }
 
 int main(int argc, char *argv[])
