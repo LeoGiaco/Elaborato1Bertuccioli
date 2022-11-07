@@ -8,6 +8,17 @@ void Scene::addShape(Shape2D *shape)
     shapes.push_back(shape);
 }
 
+void Scene::removeShape(Shape2D *shape)
+{
+    shapes.remove(shape);
+}
+
+void Scene::deleteShape(Shape2D *shape)
+{
+    removeShape(shape);
+    delete shape;
+}
+
 Shape2D *Scene::operator[](size_t index)
 {
     if (index >= shapes.size())
@@ -15,7 +26,13 @@ Shape2D *Scene::operator[](size_t index)
         throw runtime_error("Index outside of array.");
     }
 
-    return shapes[index];
+    list<Shape2D *>::iterator it = shapes.begin();
+    for (size_t i = 0; i < index; i++)
+    {
+        ++it;
+    }
+
+    return *it;
 }
 
 size_t Scene::shapeNum()
@@ -25,8 +42,10 @@ size_t Scene::shapeNum()
 
 void Scene::draw()
 {
+    list<Shape2D *>::iterator it = shapes.begin();
     for (size_t i = 0; i < shapeNum(); i++)
     {
-        shapes[i]->draw();
+        (*it)->draw();
+        ++it;
     }
 }
