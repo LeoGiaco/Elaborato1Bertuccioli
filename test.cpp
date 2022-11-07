@@ -4,9 +4,18 @@
 #include "./core/GLProgram.h"
 #include "./core/Scene.h"
 
-#define WINDOW_WIDTH 800
+#define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
 #define DELTA_T 16.0f / 1000
+
+#define WAVES_ON_SCREEN 1
+#define WAVES_POINTS 100
+#define WAVE_WIDTH_NORM 2.0f / WAVES_ON_SCREEN
+#define WAVE_WIDTH (float)WINDOW_WIDTH / WAVES_ON_SCREEN // WINDOW_WIDTH / 2.0f * WAVE_WIDTH_NORM
+#define WAVE_MAX_HEIGHT_NORM 0.05f
+#define WAVE_MAX_HEIGHT WINDOW_HEIGHT *WAVE_MAX_HEIGHT_NORM
+
+#define BOAT_FIXED_X WINDOW_WIDTH / 3.0f
 
 char *vshader = (char *)"shaders/vertexShader.glsl";
 char *fshader = (char *)"shaders/fragmentShader.glsl";
@@ -25,17 +34,46 @@ float t = 0;
 
 float reload = 0;
 int moving = 0, dir = 1;
+float relBoatX = 0;
+
+float waveRel = 0;
 
 Shape *chooseRandomEnemy()
 {
     return enemy1; // TODO: implement.
 }
 
+#pragma region wave
+float getNormalizedWaveAngle(float xN)
+{
+    return radians(180.0f * (xN + 1) * WAVES_ON_SCREEN);
+}
+
+float getNormalizedWaveHeight(float xN)
+{
+    return WAVE_MAX_HEIGHT_NORM * sin(getNormalizedWaveAngle(xN));
+}
+
+float getWaveTangentAngle(float x)
+{
+    float angle = getNormalizedWaveAngle(2 * x / WINDOW_WIDTH - 1.0f);
+    return atan(0.5 * cos(angle));
+}
+
+float getWaveHeight(float x)
+{
+    // map [0, WINDOW_WIDTH] to [-1, 1]
+    return WINDOW_HEIGHT / 2.0f + WINDOW_HEIGHT * getNormalizedWaveHeight(2 * x / WINDOW_WIDTH - 1.0f);
+    // map output [-1, 1] to [0, WINDOW_HEIGHT]
+}
+#pragma endregion
+
 void fire()
 {
     reload = 2;
 }
 
+#pragma region callbacks
 void drawCallback()
 {
     w.drawScene();
@@ -50,9 +88,12 @@ void updateCallback(int v)
     if (t > 360)
         t -= 360;
 
-    boat->setRotationAroundAnchor(radians(10 * sin(2 * t)));
-    boat->shiftAnchorX(moving * 80 * DELTA_T);
+    waveRel -= 30 * DELTA_T;
+    relBoatX += moving * 200 * DELTA_T;
 
+    boat->setRotationAroundAnchor(getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRel));
+    boat->setAnchorY(getWaveHeight(BOAT_FIXED_X + relBoatX - waveRel));
+    sea->setX(waveRel - relBoatX); // (waveRel - relBoatX) % WINDOW_WIDTH
     glutTimerFunc(w.getUpdateDelay(), updateCallback, 0);
     glutPostRedisplay();
 }
@@ -105,7 +146,9 @@ void keyboardCallbackUpSp(int key, int mouseX, int mouseY)
         break;
     }
 }
+#pragma endregion
 
+#pragma region shapes
 void createBoat(ComplexShape **boat)
 {
     ////////// boat
@@ -157,23 +200,23 @@ void createBoat(ComplexShape **boat)
     samples.clear();
     derivs.clear();
 
-    samples.push_back(vec3(0.81f, 0.31f, 0));
+    samples.push_back(vec3(0.82f, 0.24f, 0));
     samples.push_back(vec3(0.01f, 0.47f, 0));
     samples.push_back(vec3(-0.9f, 0.5f, 0));
     samples.push_back(vec3(-0.72f, 0.29f, 0));
     samples.push_back(vec3(-0.72f, -0.25f, 0));
     samples.push_back(vec3(-0.874f, -0.506f, 0));
     samples.push_back(vec3(0, -0.53f, 0));
-    samples.push_back(vec3(0.81f, -0.37f, 0));
+    samples.push_back(vec3(0.82f, -0.29f, 0));
 
-    derivs.push_back(vec2(-0.742f, 0.585f));
+    derivs.push_back(vec2(0, 0.644f));
     derivs.push_back(vec2(-0.5426f, 0.0174f));
     derivs.push_back(vec2(-0.268f, 0.011f));
     derivs.push_back(vec2(-0.005f, -0.3315f));
     derivs.push_back(vec2(0.002f, -0.215f));
     derivs.push_back(vec2(-0.5048f, -0.05f));
     derivs.push_back(vec2(0.6037f, -0.002f));
-    derivs.push_back(vec2(0.7407f, 0.6059f));
+    derivs.push_back(vec2(0, 0.644f));
 
     Shape *s3 = Shape::HermiteCurve(&program, 4, samples, derivs, vec4(1, 1, 1, 1), true, vec3(0.6f, 0, 0), vec4(0.8, 0.8, 0.8, 1));
     s3->setScale(70);
@@ -211,7 +254,7 @@ void createBoat(ComplexShape **boat)
     (*boat)->addShape(s1);
     (*boat)->addShape(s5);
     (*boat)->addShape(s4);
-    (*boat)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
+    (*boat)->setAnchorPosition(BOAT_FIXED_X, getWaveHeight(BOAT_FIXED_X));
 }
 
 void createEnemies(Shape **e1, Shape **e2, Shape **e3)
@@ -220,11 +263,31 @@ void createEnemies(Shape **e1, Shape **e2, Shape **e3)
 
 void createSea(Shape **sea)
 {
-    (*sea) = Shape::circle(&program, 4, vec4(0, 0.3f, 0.75f, 0.8f), vec4(0, 0.3f, 0.75f, 0.8f)); // Will become a curve.
-    (*sea)->rotate(radians(45.0f));
-    (*sea)->setPosition(w.getWidth() / 2.0f, 0);
-    (*sea)->setScale(w.getWidth() / 2.0f * 1.45f);
+    vector<vec3> vertices;
+    vector<vec4> colors;
+
+    vertices.push_back(vec3(0, -0.8f, 0));
+    vertices.push_back(vec3(-1.0f, 0, 0));
+    vertices.push_back(vec3(-1.0f, -1.0f, 0));
+    vertices.push_back(vec3(1.0f + WAVE_WIDTH_NORM, -1.0f, 0));
+
+    for (int i = 0; i < WAVES_POINTS; i++)
+    {
+        float x = (1.0f + WAVE_WIDTH_NORM) - (2.0f + WAVE_WIDTH_NORM) * i / (WAVES_POINTS - 1);
+        vertices.push_back(vec3(x, getNormalizedWaveHeight(x), 0));
+    }
+
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        colors.push_back(vec4(0, 0.3f, 0.75f, 0.8f));
+    }
+
+    (*sea) = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    (*sea)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
+    // (*sea)->setScale(50, 50);
+    (*sea)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
 }
+#pragma endregion
 
 void createShapes()
 {
