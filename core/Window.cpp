@@ -1,7 +1,7 @@
 #include "Window.h"
 
 Window::Window(GLProgram *glProgram, Scene *scene, int width, int height, mat4 proj)
-    : glProgram(glProgram), scene(scene), width(width), height(height), projection(proj) {}
+    : glProgram(glProgram), scene(scene), width(width), height(height), ratio(((float)width / height)), projection(proj) {}
 
 void Window::init(int argc, char *argv[], char *title, int initX, int initY,
                   void (*drawCallback)(), void (*updateCallback)(int), unsigned int updateDelay, void (*reshapeCallback)(int, int))
@@ -54,16 +54,15 @@ void Window::reshape(int w, int h)
     width = w;
     height = h;
 
-    float AspectRatio_mondo = 1.0f; // As class field.
-    if (AspectRatio_mondo > w / h)
+    if (ratio > w / h)
     {
-        glViewport(0, 0, w, w / AspectRatio_mondo);
-        glUniform2f(resId, w, w / AspectRatio_mondo);
+        glViewport(0, 0, w, w / ratio);
+        glUniform2f(resId, w, w / ratio);
     }
     else
     {
-        glViewport(0, 0, h * AspectRatio_mondo, h);
-        glUniform2f(resId, h * AspectRatio_mondo, h);
+        glViewport(0, 0, h * ratio, h);
+        glUniform2f(resId, h * ratio, h);
     }
 }
 

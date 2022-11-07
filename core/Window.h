@@ -9,6 +9,7 @@ class Window
 private:
     int width;
     int height;
+    float ratio;
     unsigned int updateDelay;
     mat4 projection;
     GLProgram *glProgram;
