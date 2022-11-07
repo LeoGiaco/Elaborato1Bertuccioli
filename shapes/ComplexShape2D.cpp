@@ -74,6 +74,38 @@ void ComplexShape2D::setPosition(vec3 pos)
     }
 }
 
+void ComplexShape2D::setX(float x)
+{
+    for (size_t i = 0; i < shapes.size(); i++)
+    {
+        shapes[i]->setX(x);
+    }
+}
+
+void ComplexShape2D::setY(float y)
+{
+    for (size_t i = 0; i < shapes.size(); i++)
+    {
+        shapes[i]->setY(y);
+    }
+}
+
+void ComplexShape2D::setAnchorX(float x)
+{
+    for (size_t i = 0; i < shapes.size(); i++)
+    {
+        shapes[i]->setAnchorX(x);
+    }
+}
+
+void ComplexShape2D::setAnchorY(float y)
+{
+    for (size_t i = 0; i < shapes.size(); i++)
+    {
+        shapes[i]->setAnchorY(y);
+    }
+}
+
 void ComplexShape2D::setAnchorPosition(float x, float y, float z)
 {
     for (size_t i = 0; i < shapes.size(); i++)

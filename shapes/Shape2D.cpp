@@ -95,6 +95,30 @@ void Shape2D::setPosition(vec3 pos)
 	this->updated = true;
 }
 
+void Shape2D::setX(float x)
+{
+	this->position.x = x;
+	this->updated = true;
+}
+
+void Shape2D::setY(float y)
+{
+	this->position.y = y;
+	this->updated = true;
+}
+
+void Shape2D::setAnchorX(float x)
+{
+	this->anchorPosition.x = x;
+	this->updated = true;
+}
+
+void Shape2D::setAnchorY(float y)
+{
+	this->anchorPosition.y = y;
+	this->updated = true;
+}
+
 void Shape2D::setAnchorPosition(float x, float y, float z)
 {
 	this->setAnchorPosition(vec3(x, y, z));

@@ -60,6 +60,12 @@ public:
     // Sets the position of the shape relative to the anchor.
     virtual void setPosition(vec3 pos);
 
+    virtual void setX(float x);
+    virtual void setY(float y);
+
+    virtual void setAnchorX(float x);
+    virtual void setAnchorY(float y);
+
     // Sets the anchor position of the shape.
     virtual void setAnchorPosition(float x, float y, float z = 0.0f);
     // Sets the anchor position of the shape.

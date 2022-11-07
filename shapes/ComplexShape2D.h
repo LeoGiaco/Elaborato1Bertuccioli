@@ -33,6 +33,12 @@ public:
     // Should not be used in most cases in favor of setAnchorPosition.
     void setPosition(vec3 pos) override;
 
+    void setX(float x);
+    void setY(float y);
+
+    void setAnchorX(float x);
+    void setAnchorY(float y);
+
     // Sets the anchor position of all sub-shapes.
     void setAnchorPosition(float x, float y, float z = 0.0f) override;
     // Sets the anchor position of all sub-shapes.
