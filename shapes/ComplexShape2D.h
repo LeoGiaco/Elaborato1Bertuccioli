@@ -9,6 +9,11 @@ public:
     ComplexShape2D(GLProgram *program);
     void addShape(Shape2D *shape);
 
+    // Returns the angle of the shape around its anchor.
+    virtual float getAnchorAngleOf(int shapeNum);
+
+    virtual vec3 getAnchorPositionOf(int shapeNum);
+
     // Sets the scale of all sub-shapes.
     // Should not be used in most cases in favor of setScaleAroundAnchor.
     void setScale(float scale) override;
