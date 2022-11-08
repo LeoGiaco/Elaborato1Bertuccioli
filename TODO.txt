@@ -1,9 +1,5 @@
-TODO: aggiungere onda che si muove
-TODO: aggiungere movimento apparente della nave quando si preme la freccia destra/sinistra, che accelera lo spostamento delle onde
 TODO: cambiare colori pezzi barca
-TODO: la barca (e i nemici) si devono muovere sulle onde -> metodo per ricavare l'angolo data la x a schermo dell'oggetto e lo spostamento delle onde
 TODO: creare 1-3 tipi di nemici (sasso prima)
-TODO: classe Enemy con metodo for(Shape * shape), con un box collider e della vita, che pilota lo shape sottostante
 TODO: aggiungere sparo e danneggiamento
 TODO: aggiungere shader nemici che li fa lampeggiare di rosso quando colpiti
 TODO: adattare fragment shader barca
