@@ -25,6 +25,7 @@ char *title = (char *)"Prova";
 
 GLProgram program;
 Scene scene;
+list<Shape *> projectiles;
 Window w(&program, &scene, WINDOW_WIDTH, WINDOW_HEIGHT, ortho(0.0f, (float)WINDOW_WIDTH, 0.0f, (float)WINDOW_HEIGHT));
 
 mat4 Projection;
@@ -80,7 +81,18 @@ float getWaveTangentAngle(float x)
 
 void fire()
 {
-    reload = 2;
+    if (reload <= 0)
+    {
+        reload = 0.1f;
+
+        Shape *proj = Shape::circle(&program, 12, vec4(0, 0, 0, 1), vec4(0.3f, 0.3f, 0.3f, 0.3f));
+        proj->setScale(15);
+        proj->setAnchorPosition(boat->getAnchorPositionOf(3));
+        proj->rotateAroundAnchor(boat->getAnchorAngleOf(3));
+
+        scene.addShape(proj);
+        projectiles.push_back(proj);
+    }
 }
 
 #pragma region callbacks
@@ -104,6 +116,38 @@ void updateCallback(int v)
     boat->setRotationAroundAnchor(getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRel));
     boat->setAnchorY(getWaveHeight(BOAT_FIXED_X + relBoatX - waveRel) - 10.0f);
     sea->setX(-MOD(relBoatX - waveRel, WAVE_WIDTH)); // The wave moves in the negative x
+
+    vector<Shape *> removed;
+
+    auto it = projectiles.begin();
+    for (size_t i = 0; i < projectiles.size(); i++)
+    {
+        Shape *p = (*it);
+
+        p->shiftX(250 * DELTA_T);
+
+        if (p->getPosition()[0] >= WINDOW_WIDTH)
+        {
+            cout << "OUT " << t << endl;
+            removed.push_back(p);
+            p->setEnabled(false);
+        }
+
+        if (p->isColliding(enemy1))
+        {
+            cout << "HIT " << t << endl;
+            removed.push_back(p);
+            p->setEnabled(false);
+        }
+
+        ++it;
+    }
+
+    for (size_t i = 0; i < removed.size(); i++)
+    {
+        projectiles.remove(removed[i]);
+        scene.deleteShape(static_cast<Shape *>(removed[i]));
+    }
 
     glutTimerFunc(w.getUpdateDelay(), updateCallback, 0);
     glutPostRedisplay();
@@ -270,6 +314,10 @@ void createBoat(ComplexShape **boat)
 
 void createEnemies(Shape **e1, Shape **e2, Shape **e3)
 {
+    (*e1) = Shape::circle(&program, 4, vec4(1, 0, 0, 1), vec4(0, 1, 0, 1));
+    (*e1)->setPosition((float)WINDOW_WIDTH / 2, (float)WINDOW_HEIGHT * 2 / 3);
+    (*e1)->setScale(100);
+    (*e1)->setRotation(radians(45.0f));
 }
 
 void createSea(Shape **sea)
@@ -308,6 +356,7 @@ void createShapes()
 
     scene.addShape(boat);
     scene.addShape(sea);
+    scene.addShape(enemy1);
 }
 
 int main(int argc, char *argv[])
