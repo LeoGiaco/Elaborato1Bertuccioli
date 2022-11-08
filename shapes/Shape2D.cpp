@@ -1,4 +1,5 @@
 #include "Shape2D.h"
+#include <iostream>
 
 Shape2D::Shape2D(GLProgram *prog, vector<vec3> vertices, vector<vec4> colors, GLenum drawMode, bool doDynamicDraw)
 	: program(prog), drawMode(drawMode), dynamicDraw(doDynamicDraw), updated(true), position(vec3(0, 0, 0)),
@@ -50,6 +51,16 @@ float Shape2D::getAnchorAngle()
 float Shape2D::getTotalAngle()
 {
 	return centerAngle + ((int)(!lockedRotation) * anchorAngle);
+}
+
+vec3 Shape2D::getPosition()
+{
+	return position;
+}
+
+vec3 Shape2D::getAnchorPosition()
+{
+	return anchorPosition;
 }
 
 void Shape2D::setScale(float scale)
@@ -346,4 +357,50 @@ Shape2D *Shape2D::HermiteCurve(GLProgram *program, int nPieceVertices, vector<ve
 	}
 
 	return new Shape2D(program, vertices, colors, fill ? GL_TRIANGLE_FAN : GL_LINE_STRIP);
+}
+
+vector<vec3> Shape2D::getBoxCollider()
+{
+	calculateModelIfUpdated();
+
+	vector<vec3> box_collider;
+
+	if (vertices.size() == 0)
+		throw invalid_argument("Shape has no vertices.");
+
+	vec3 v0 = vec3(model * vec4(vertices[0], 1));
+	float minX = v0.x, minY = v0.y, maxX = v0.x, maxY = v0.y;
+	for (size_t i = 1; i < vertices.size(); i++)
+	{
+		vec3 v = vec3(model * vec4(vertices[i], 1));
+
+		if (minX > v.x)
+			minX = v.x;
+		else if (maxX < v.x)
+			maxX = v.x;
+
+		if (minY > v.y)
+			minY = v.y;
+		else if (maxY < v.y)
+			maxY = v.y;
+	}
+	box_collider.push_back(vec3(minX, minY, 0));
+	box_collider.push_back(vec3(maxX, maxY, 0));
+
+	return box_collider;
+}
+
+#define BETWEEN(v1, v, v2) ((v1) <= (v)) && ((v) <= (v2))
+
+bool intersect(vector<vec3> bbox1, vector<vec3> bbox2)
+{
+	return (BETWEEN(bbox1[0].x, bbox2[0].x, bbox1[1].x) || BETWEEN(bbox1[0].x, bbox2[1].x, bbox1[1].x)) && (BETWEEN(bbox1[0].y, bbox2[0].y, bbox1[1].y) || BETWEEN(bbox1[0].y, bbox2[1].y, bbox1[1].y));
+}
+
+bool Shape2D::isColliding(Shape2D *other)
+{
+	auto bc1 = getBoxCollider();
+	auto bc2 = other->getBoxCollider();
+
+	return intersect(bc1, bc2) || intersect(bc2, bc1);
 }

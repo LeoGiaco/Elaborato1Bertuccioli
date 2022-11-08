@@ -12,10 +12,9 @@ protected:
     vector<vec3> vertices;
     vector<vec4> colors;
     GLenum drawMode;
+    mat4 model;
 
     GLProgram *program;
-
-    mat4 model;
 
     vec3 scale;
     vec3 anchorScale;
@@ -35,11 +34,14 @@ public:
     Shape2D(GLProgram *program, vector<vec3> vertices, vector<vec4> colors, GLenum drawMode, bool doDynamicDraw = false);
 
     // Returns the angle of the shape around its center.
-    float getCenterAngle();
+    virtual float getCenterAngle();
     // Returns the angle of the shape around its anchor.
-    float getAnchorAngle();
+    virtual float getAnchorAngle();
     // Returns the combined angle of the shape. If the rotation is locked, returns only the center angle.
-    float getTotalAngle();
+    virtual float getTotalAngle();
+
+    virtual vec3 getPosition();
+    virtual vec3 getAnchorPosition();
 
     // Sets the scale of the shape.
     virtual void setScale(float scale);
@@ -136,4 +138,8 @@ public:
 
     // Draws the shape.
     virtual void draw();
+
+    vector<vec3> getBoxCollider();
+
+    bool isColliding(Shape2D *other);
 } Shape;
