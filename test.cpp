@@ -8,14 +8,16 @@
 #define WINDOW_HEIGHT 800
 #define DELTA_T 16.0f / 1000
 
-#define WAVES_ON_SCREEN 1
+#define WAVES_ON_SCREEN 3
 #define WAVES_POINTS 100
 #define WAVE_WIDTH_NORM 2.0f / WAVES_ON_SCREEN
 #define WAVE_WIDTH (float)WINDOW_WIDTH / WAVES_ON_SCREEN // WINDOW_WIDTH / 2.0f * WAVE_WIDTH_NORM
-#define WAVE_MAX_HEIGHT_NORM 0.05f
+#define WAVE_MAX_HEIGHT_NORM 80.0f / WINDOW_HEIGHT
 #define WAVE_MAX_HEIGHT WINDOW_HEIGHT *WAVE_MAX_HEIGHT_NORM
 
-#define BOAT_FIXED_X WINDOW_WIDTH / 3.0f
+#define BOAT_FIXED_X WINDOW_WIDTH / 5.0f
+
+#define MOD(f1, f2) ((f1) - (f2)*floorf((f1) / (f2)))
 
 char *vshader = (char *)"shaders/vertexShader.glsl";
 char *fshader = (char *)"shaders/fragmentShader.glsl";
@@ -44,20 +46,19 @@ Shape *chooseRandomEnemy()
 }
 
 #pragma region wave
+float getAngle(float xN)
+{
+    return radians(MOD(180.0f * (xN + 1) * WAVES_ON_SCREEN, 360.0f));
+}
+
 float getNormalizedWaveAngle(float xN)
 {
-    return radians(180.0f * (xN + 1) * WAVES_ON_SCREEN);
+    return asinf(WAVE_MAX_HEIGHT_NORM * sin(getAngle(xN)));
 }
 
 float getNormalizedWaveHeight(float xN)
 {
-    return WAVE_MAX_HEIGHT_NORM * sin(getNormalizedWaveAngle(xN));
-}
-
-float getWaveTangentAngle(float x)
-{
-    float angle = getNormalizedWaveAngle(2 * x / WINDOW_WIDTH - 1.0f);
-    return atan(0.5 * cos(angle));
+    return sin(getNormalizedWaveAngle(xN));
 }
 
 float getWaveHeight(float x)
@@ -66,6 +67,15 @@ float getWaveHeight(float x)
     return WINDOW_HEIGHT / 2.0f + WINDOW_HEIGHT * getNormalizedWaveHeight(2 * x / WINDOW_WIDTH - 1.0f);
     // map output [-1, 1] to [0, WINDOW_HEIGHT]
 }
+
+float getWaveTangentAngle(float x)
+{
+    float y1 = getWaveHeight(x);
+    float y2 = getWaveHeight(x + 1);
+
+    return atan2(y2 - y1, 1); // Approximation of the angle of the wave.
+}
+
 #pragma endregion
 
 void fire()
@@ -92,8 +102,9 @@ void updateCallback(int v)
     relBoatX += moving * 200 * DELTA_T;
 
     boat->setRotationAroundAnchor(getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRel));
-    boat->setAnchorY(getWaveHeight(BOAT_FIXED_X + relBoatX - waveRel));
-    sea->setX(waveRel - relBoatX); // (waveRel - relBoatX) % WINDOW_WIDTH
+    boat->setAnchorY(getWaveHeight(BOAT_FIXED_X + relBoatX - waveRel) - 10.0f);
+    sea->setX(-MOD(relBoatX - waveRel, WAVE_WIDTH)); // The wave moves in the negative x
+
     glutTimerFunc(w.getUpdateDelay(), updateCallback, 0);
     glutPostRedisplay();
 }
@@ -266,7 +277,7 @@ void createSea(Shape **sea)
     vector<vec3> vertices;
     vector<vec4> colors;
 
-    vertices.push_back(vec3(0, -0.8f, 0));
+    vertices.push_back(vec3(0, -2.0f, 0));
     vertices.push_back(vec3(-1.0f, 0, 0));
     vertices.push_back(vec3(-1.0f, -1.0f, 0));
     vertices.push_back(vec3(1.0f + WAVE_WIDTH_NORM, -1.0f, 0));
@@ -306,7 +317,7 @@ int main(int argc, char *argv[])
     program.useProgram(inst);
     cout << glGetError() << endl;
 
-    glClearColor(0, 0, 0.2f, 1.0f);
+    glClearColor(0, 0.79f, 0.9f, 1.0f);
 
     createShapes();
 
