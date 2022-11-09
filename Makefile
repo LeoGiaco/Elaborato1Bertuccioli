@@ -3,7 +3,7 @@ FLAGS=-g -I ./core -I ./shapes -lglut -lGLU -lGL -lGLEW
 
 all: test.out
 
-test.out: ./bin/test.o ./bin/Window.o ./bin/GLProgram.o ./bin/Scene.o ./bin/Shape2D.o ./bin/ComplexShape2D.o
+test.out: ./bin/test.o ./bin/Window.o ./bin/GLProgram.o ./bin/Scene.o ./bin/Shape2D.o ./bin/ComplexShape2D.o ./bin/Bullet.o
 	g++ -o test.out ./bin/*.o ${FLAGS}
 
 ./bin/test.o: test.cpp
@@ -23,6 +23,9 @@ test.out: ./bin/test.o ./bin/Window.o ./bin/GLProgram.o ./bin/Scene.o ./bin/Shap
 
 ./bin/ComplexShape2D.o: ./shapes/ComplexShape2D.cpp ./shapes/ComplexShape2D.h
 	g++ -c -o ./bin/ComplexShape2D.o ./shapes/ComplexShape2D.cpp ${FLAGS}
+
+./bin/Bullet.o: ./entities/Bullet.cpp ./entities/Bullet.h
+	g++ -c -o ./bin/Bullet.o ./entities/Bullet.cpp ${FLAGS}
 
 .PHONY: clean
 
