@@ -10,6 +10,7 @@
 #include <list>
 #include <map>
 #include <iterator>
+#include <tuple>
 
 using namespace glm;
 using namespace std;
