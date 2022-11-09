@@ -63,6 +63,12 @@ vec3 Shape2D::getAnchorPosition()
 	return anchorPosition;
 }
 
+vec3 Shape2D::getWorldPosition()
+{
+	calculateModelIfUpdated();
+	return vec3(model * vec4(0, 0, 0, 1));
+}
+
 void Shape2D::setScale(float scale)
 {
 	this->setScale(vec3(scale, scale, 1.0f));
@@ -261,7 +267,7 @@ void Shape2D::calculateModelIfUpdated()
 
 void Shape2D::setEnabled(bool enabled)
 {
-	this->enabled = enabled;
+	this->enabledNextFrame = enabled;
 }
 
 void Shape2D::draw()
@@ -277,6 +283,7 @@ void Shape2D::draw()
 		glDrawArrays(drawMode, 0, vertices.size());
 		glBindVertexArray(0);
 	}
+	enabled = enabledNextFrame; // To avoid shapes appearing/disappearing inconsistently on screen immediately after being enabled/disabled.
 }
 
 Shape2D *Shape2D::circle(GLProgram *program, int nvertices, vec4 centerColor, vec4 color)

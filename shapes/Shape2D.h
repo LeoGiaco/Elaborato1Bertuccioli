@@ -26,6 +26,7 @@ protected:
     bool dynamicDraw;
     bool lockedRotation = false;
     bool updated;
+    bool enabledNextFrame = true;
     bool enabled = true;
 
     void initShape();
@@ -42,6 +43,8 @@ public:
 
     virtual vec3 getPosition();
     virtual vec3 getAnchorPosition();
+
+    virtual vec3 getWorldPosition();
 
     // Sets the scale of the shape.
     virtual void setScale(float scale);
