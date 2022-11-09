@@ -3,21 +3,25 @@
 #include "./core/Window.h"
 #include "./core/GLProgram.h"
 #include "./core/Scene.h"
+#include "./entities/Bullet.h"
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
-#define DELTA_T 16.0f / 1000
+#define DELTA_T (16.0f / 1000)
 
 #define WAVES_ON_SCREEN 3
 #define WAVES_POINTS 100
-#define WAVE_WIDTH_NORM 2.0f / WAVES_ON_SCREEN
-#define WAVE_WIDTH (float)WINDOW_WIDTH / WAVES_ON_SCREEN // WINDOW_WIDTH / 2.0f * WAVE_WIDTH_NORM
-#define WAVE_MAX_HEIGHT_NORM 80.0f / WINDOW_HEIGHT
-#define WAVE_MAX_HEIGHT WINDOW_HEIGHT *WAVE_MAX_HEIGHT_NORM
+#define WAVE_WIDTH_NORM (2.0f / WAVES_ON_SCREEN)
+#define WAVE_WIDTH ((float)WINDOW_WIDTH / WAVES_ON_SCREEN) // WINDOW_WIDTH / 2.0f * WAVE_WIDTH_NORM
+#define WAVE_MAX_HEIGHT_NORM (20.0f / WINDOW_HEIGHT)
+#define WAVE_MAX_HEIGHT (WINDOW_HEIGHT * WAVE_MAX_HEIGHT_NORM)
 
-#define BOAT_FIXED_X WINDOW_WIDTH / 5.0f
+#define BOAT_FIXED_X (WINDOW_WIDTH / 5.0f)
 
 #define MOD(f1, f2) ((f1) - (f2)*floorf((f1) / (f2)))
+
+#define BULLET_SPEED 600.0f
+#define Y_FALL 600.0f
 
 char *vshader = (char *)"shaders/vertexShader.glsl";
 char *fshader = (char *)"shaders/fragmentShader.glsl";
@@ -25,25 +29,45 @@ char *title = (char *)"Prova";
 
 GLProgram program;
 Scene scene;
-list<Shape *> projectiles;
+list<tuple<Bullet *, Shape *>> projectiles;
 Window w(&program, &scene, WINDOW_WIDTH, WINDOW_HEIGHT, ortho(0.0f, (float)WINDOW_WIDTH, 0.0f, (float)WINDOW_HEIGHT));
 
 mat4 Projection;
 
 Shape *sea;
 ComplexShape *boat;
-Shape *enemy1, *enemy2, *enemy3, *activeEnemy;
-float t = 0;
+Shape *enemy1, *enemy2, *enemy3, **activeEnemy = &enemy1;
 
 float reload = 0;
 int moving = 0, dir = 1;
-float relBoatX = 0;
+float relBoatX = 0, boatMovementDeltaX = 0;
+
+int cannonAngleMovement = 0;
 
 float waveRel = 0;
 
-Shape *chooseRandomEnemy()
+float enemyX = 0;
+float enemyHealth = 5;
+
+void chooseNextEnemy()
 {
-    return enemy1; // TODO: implement.
+    (*activeEnemy)->setEnabled(false);
+    int i = rand() % 3;
+    switch (i)
+    {
+    case 0:
+        activeEnemy = &enemy1;
+        break;
+    case 1:
+        activeEnemy = &enemy2;
+        break;
+    case 2:
+        activeEnemy = &enemy3;
+        break;
+    }
+
+    enemyX += 1800.0f;
+    (*activeEnemy)->setEnabled(true);
 }
 
 #pragma region wave
@@ -87,11 +111,16 @@ void fire()
 
         Shape *proj = Shape::circle(&program, 12, vec4(0, 0, 0, 1), vec4(0.3f, 0.3f, 0.3f, 0.3f));
         proj->setScale(15);
-        proj->setAnchorPosition(boat->getAnchorPositionOf(3));
-        proj->rotateAroundAnchor(boat->getAnchorAngleOf(3));
-
+        proj->setAnchorPosition((*boat->getShape(4))->getWorldPosition());
         scene.addShape(proj);
-        projectiles.push_back(proj);
+
+        float angle = (*boat->getShape(4))->getCenterAngle();
+        if (dir < 0)
+            angle = radians(180.0f) - angle;
+
+        Bullet *b = new Bullet(BULLET_SPEED, angle + (*boat->getShape(4))->getAnchorAngle(), Y_FALL);
+
+        projectiles.push_back(make_tuple(b, proj));
     }
 }
 
@@ -106,38 +135,58 @@ void updateCallback(int v)
     if (reload > 0)
         reload -= DELTA_T;
 
-    t += DELTA_T;
-    if (t > 360)
-        t -= 360;
-
     waveRel -= 30 * DELTA_T;
-    relBoatX += moving * 200 * DELTA_T;
+
+    boatMovementDeltaX = moving * 200 * DELTA_T;
+    relBoatX += boatMovementDeltaX;
 
     boat->setRotationAroundAnchor(getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRel));
     boat->setAnchorY(getWaveHeight(BOAT_FIXED_X + relBoatX - waveRel) - 10.0f);
+
+    if (cannonAngleMovement != 0)
+    {
+        Shape **cannon = boat->getShape(4);
+        float cannonAngle = clamp((*cannon)->getCenterAngle() + cannonAngleMovement * radians(30 * DELTA_T), radians(-45.0f), radians(45.0f));
+        (*cannon)->setRotation(cannonAngle);
+    }
+
     sea->setX(-MOD(relBoatX - waveRel, WAVE_WIDTH)); // The wave moves in the negative x
 
-    vector<Shape *> removed;
+    (*activeEnemy)->setRotation(getWaveTangentAngle(enemyX - waveRel) + radians(45.0f));
+    (*activeEnemy)->setX(enemyX - relBoatX);
+    (*activeEnemy)->setY(getWaveHeight(enemyX - waveRel) + 30.0f);
+
+    vector<tuple<Bullet *, Shape *>> removed;
 
     auto it = projectiles.begin();
     for (size_t i = 0; i < projectiles.size(); i++)
     {
-        Shape *p = (*it);
+        auto tp = (*it);
+        Bullet *b = get<0>(tp);
+        Shape *p = get<1>(tp);
 
-        p->shiftX(250 * DELTA_T);
+        p->move(b->getNewSpeed(DELTA_T) * DELTA_T);
+        p->shiftX(-boatMovementDeltaX);
 
-        if (p->getPosition()[0] >= WINDOW_WIDTH)
+        if (p->getWorldPosition().y <= 0)
         {
-            cout << "OUT " << t << endl;
-            removed.push_back(p);
+            cout << "OUT " << endl;
+            removed.push_back(tp);
             p->setEnabled(false);
         }
 
-        if (p->isColliding(enemy1))
+        if (p->isColliding((*activeEnemy)))
         {
-            cout << "HIT " << t << endl;
-            removed.push_back(p);
+            cout << "HIT " << endl;
+            removed.push_back(tp);
             p->setEnabled(false);
+
+            enemyHealth--;
+            if (enemyHealth <= 0)
+            {
+                enemyHealth = 5;
+                chooseNextEnemy();
+            }
         }
 
         ++it;
@@ -146,7 +195,7 @@ void updateCallback(int v)
     for (size_t i = 0; i < removed.size(); i++)
     {
         projectiles.remove(removed[i]);
-        scene.deleteShape(static_cast<Shape *>(removed[i]));
+        scene.deleteShape(get<1>(removed[i]));
     }
 
     glutTimerFunc(w.getUpdateDelay(), updateCallback, 0);
@@ -180,6 +229,12 @@ void keyboardCallbackSp(int key, int mouseX, int mouseY)
         dir = 1;
         boat->setScaleRelativeToAnchor(1, 1);
         break;
+    case GLUT_KEY_UP:
+        cannonAngleMovement = 1;
+        break;
+    case GLUT_KEY_DOWN:
+        cannonAngleMovement = -1;
+        break;
     default:
         break;
     }
@@ -196,6 +251,14 @@ void keyboardCallbackUpSp(int key, int mouseX, int mouseY)
     case GLUT_KEY_RIGHT:
         if (moving > 0)
             moving = 0;
+        break;
+    case GLUT_KEY_UP:
+        if (cannonAngleMovement > 0)
+            cannonAngleMovement = 0;
+        break;
+    case GLUT_KEY_DOWN:
+        if (cannonAngleMovement < 0)
+            cannonAngleMovement = 0;
         break;
     default:
         break;
@@ -315,9 +378,14 @@ void createBoat(ComplexShape **boat)
 void createEnemies(Shape **e1, Shape **e2, Shape **e3)
 {
     (*e1) = Shape::circle(&program, 4, vec4(1, 0, 0, 1), vec4(0, 1, 0, 1));
-    (*e1)->setPosition((float)WINDOW_WIDTH / 2, (float)WINDOW_HEIGHT * 2 / 3);
     (*e1)->setScale(100);
-    (*e1)->setRotation(radians(45.0f));
+    (*e1)->setEnabled(false);
+    (*e2) = Shape::circle(&program, 4, vec4(0, 1, 0, 1), vec4(0, 0, 1, 1));
+    (*e2)->setScale(100);
+    (*e2)->setEnabled(false);
+    (*e3) = Shape::circle(&program, 4, vec4(0, 0, 1, 1), vec4(1, 0, 0, 1));
+    (*e3)->setScale(100);
+    (*e3)->setEnabled(false);
 }
 
 void createSea(Shape **sea)
@@ -357,6 +425,8 @@ void createShapes()
     scene.addShape(boat);
     scene.addShape(sea);
     scene.addShape(enemy1);
+    scene.addShape(enemy2);
+    scene.addShape(enemy3);
 }
 
 int main(int argc, char *argv[])
@@ -369,6 +439,7 @@ int main(int argc, char *argv[])
     glClearColor(0, 0.79f, 0.9f, 1.0f);
 
     createShapes();
+    chooseNextEnemy();
 
     glutKeyboardFunc(keyboardCallback);
     glutSpecialFunc(keyboardCallbackSp);
