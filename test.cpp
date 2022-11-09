@@ -20,6 +20,7 @@
 
 #define MOD(f1, f2) ((f1) - (f2)*floorf((f1) / (f2)))
 
+#define BULLET_RELOAD 2.0f
 #define BULLET_SPEED 600.0f
 #define Y_FALL 600.0f
 
@@ -53,6 +54,7 @@ void chooseNextEnemy()
 {
     (*activeEnemy)->setEnabled(false);
     int i = rand() % 3;
+    cout << i << endl;
     switch (i)
     {
     case 0:
@@ -107,7 +109,7 @@ void fire()
 {
     if (reload <= 0)
     {
-        reload = 0.1f;
+        reload = BULLET_RELOAD;
 
         Shape *proj = Shape::circle(&program, 12, vec4(0, 0, 0, 1), vec4(0.3f, 0.3f, 0.3f, 0.3f));
         proj->setScale(15);
@@ -431,6 +433,8 @@ void createShapes()
 
 int main(int argc, char *argv[])
 {
+    srand(time(0));
+
     w.init(argc, argv, title, 100, 100, drawCallback, updateCallback, 16, reshapeCallback);
     GLProgramInstance *inst = program.createProgram("default", vshader, fshader);
     program.useProgram(inst);
