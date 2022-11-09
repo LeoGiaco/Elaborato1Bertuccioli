@@ -10,14 +10,9 @@ void ComplexShape::addShape(Shape2D *shape)
     shapes.push_back(shape);
 }
 
-vec3 ComplexShape2D::getAnchorPositionOf(int shapeNum)
+Shape **ComplexShape::getShape(int shapeNum)
 {
-    return shapes[shapeNum]->getAnchorPosition();
-}
-
-float ComplexShape2D::getAnchorAngleOf(int shapeNum)
-{
-    return shapes[shapeNum]->getAnchorAngle();
+    return &(shapes[shapeNum]);
 }
 
 void ComplexShape2D::setScale(float scale)
