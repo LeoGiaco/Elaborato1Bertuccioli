@@ -11,12 +11,11 @@ private:
     int height;
     float ratio;
     unsigned int updateDelay;
-    mat4 projection;
     GLProgram *glProgram;
     Scene *scene;
 
 public:
-    Window(GLProgram *glProgram, Scene *scene, int width, int height, mat4 proj);
+    Window(GLProgram *glProgram, Scene *scene, int width, int height);
     void init(int argc, char *argv[], char *title, int initX, int initY,
               void (*drawCallback)(), void (*updateCallback)(int), unsigned int updateDelay, void (*reshapeCallback)(int, int));
     void loop();
@@ -25,7 +24,6 @@ public:
 
     int getWidth();
     int getHeight();
-    mat4 getProjectionMatrix();
 
     unsigned int getUpdateDelay();
 };

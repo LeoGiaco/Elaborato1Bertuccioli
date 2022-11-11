@@ -1,7 +1,7 @@
 #include "Window.h"
 
-Window::Window(GLProgram *glProgram, Scene *scene, int width, int height, mat4 proj)
-    : glProgram(glProgram), scene(scene), width(width), height(height), ratio(((float)width / height)), projection(proj) {}
+Window::Window(GLProgram *glProgram, Scene *scene, int width, int height)
+    : glProgram(glProgram), scene(scene), width(width), height(height), ratio(((float)width / height)) {}
 
 void Window::init(int argc, char *argv[], char *title, int initX, int initY,
                   void (*drawCallback)(), void (*updateCallback)(int), unsigned int updateDelay, void (*reshapeCallback)(int, int))
@@ -39,9 +39,6 @@ void Window::drawScene()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    GLint projId = glProgram->getUsedProgram()->getUniformLocation((char *)"projection");
-    glUniformMatrix4fv(projId, 1, GL_FALSE, value_ptr(projection));
-
     scene->draw();
 
     glutSwapBuffers();
@@ -49,7 +46,7 @@ void Window::drawScene()
 
 void Window::reshape(int w, int h)
 {
-    GLint resId = glProgram->getUsedProgram()->getUniformLocation((char *)"resolution");
+    auto it = glProgram->getIterator();
 
     width = w;
     height = h;
@@ -57,12 +54,20 @@ void Window::reshape(int w, int h)
     if (ratio > w / h)
     {
         glViewport(0, 0, w, w / ratio);
-        glUniform2f(resId, w, w / ratio);
+        for (size_t i = 0; i < glProgram->programsCount(); i++)
+        {
+            GLProgramInstance *inst = (*it).second;
+            inst->setResolution(vec2((float)w, w / ratio));
+        }
     }
     else
     {
         glViewport(0, 0, h * ratio, h);
-        glUniform2f(resId, h * ratio, h);
+        for (size_t i = 0; i < glProgram->programsCount(); i++)
+        {
+            GLProgramInstance *inst = (*it).second;
+            inst->setResolution(vec2(h * ratio, (float)h));
+        }
     }
 }
 
@@ -79,9 +84,4 @@ int Window::getWidth()
 int Window::getHeight()
 {
     return height;
-}
-
-mat4 Window::getProjectionMatrix()
-{
-    return projection;
 }
