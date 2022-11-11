@@ -1,5 +1,2 @@
-TODO: aggiungere lista di uniform da passare ogni volta dentro a Shape2D
-TODO: cambiare colori pezzi barca
 TODO: creare 1-3 tipi di nemici (sasso prima)
 TODO: aggiungere shader nemici che li fa lampeggiare di rosso quando colpiti
-TODO: adattare fragment shader barca
