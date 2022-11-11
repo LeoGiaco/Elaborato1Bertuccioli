@@ -24,16 +24,18 @@
 #define BULLET_SPEED 600.0f
 #define Y_FALL 600.0f
 
-char *vshader = (char *)"shaders/vertexShader.glsl";
-char *fshader = (char *)"shaders/fragmentShader.glsl";
+#define DEFAULT_SHADER_PROGRAM "default"
+#define BOAT_SHADER_PROGRAM "boat"
+#define SEA_SHADER_PROGRAM "sea"
+
 char *title = (char *)"Prova";
 
 GLProgram program;
 Scene scene;
 list<tuple<Bullet *, Shape *>> projectiles;
-Window w(&program, &scene, WINDOW_WIDTH, WINDOW_HEIGHT, ortho(0.0f, (float)WINDOW_WIDTH, 0.0f, (float)WINDOW_HEIGHT));
 
-mat4 Projection;
+mat4 projection = ortho(0.0f, (float)WINDOW_WIDTH, 0.0f, (float)WINDOW_HEIGHT);
+Window w(&program, &scene, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 Shape *sea;
 ComplexShape *boat;
@@ -49,6 +51,20 @@ float waveRel = 0;
 
 float enemyX = 0;
 float enemyHealth = 5;
+
+void createShaderPrograms()
+{
+    char *vshaderDef = (char *)"shaders/vertexShader.glsl";
+    char *fshaderDef = (char *)"shaders/fragmentShader.glsl";
+    char *vshaderBoat = (char *)"shaders/vertexShaderBoat.glsl";
+    char *fshaderBoat = (char *)"shaders/fragmentShaderBoat.glsl";
+
+    GLProgramInstance *inst = program.createProgram(DEFAULT_SHADER_PROGRAM, vshaderDef, fshaderDef);
+    inst->setProjectionMatrix(projection);
+    inst = program.createProgram(BOAT_SHADER_PROGRAM, vshaderBoat, fshaderBoat);
+    inst->setProjectionMatrix(projection);
+    program.useProgram(inst);
+}
 
 void chooseNextEnemy()
 {
@@ -112,7 +128,8 @@ void fire()
         reload = BULLET_RELOAD;
 
         Shape *proj = Shape::circle(&program, 12, vec4(0, 0, 0, 1), vec4(0.3f, 0.3f, 0.3f, 0.3f));
-        proj->setScale(15);
+        proj->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+        proj->setScale(7.5);
         proj->setAnchorPosition((*boat->getShape(4))->getWorldPosition());
         scene.addShape(proj);
 
@@ -142,8 +159,14 @@ void updateCallback(int v)
     boatMovementDeltaX = moving * 200 * DELTA_T;
     relBoatX += boatMovementDeltaX;
 
-    boat->setRotationAroundAnchor(getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRel));
-    boat->setAnchorY(getWaveHeight(BOAT_FIXED_X + relBoatX - waveRel) - 10.0f);
+    float angle = getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRel);
+    float wHeight = getWaveHeight(BOAT_FIXED_X + relBoatX - waveRel) - 10.0f;
+
+    (*(boat->getShape(2)))->addUniformValue(VALUE_VEC2, "off", new Value<vec2>(vec2(BOAT_FIXED_X / WINDOW_WIDTH, wHeight / WINDOW_HEIGHT)));
+    (*(boat->getShape(2)))->addUniformValue(VALUE_FLOAT, "angle", new Value<float>(angle));
+
+    boat->setRotationAroundAnchor(angle);
+    boat->setAnchorY(wHeight);
 
     if (cannonAngleMovement != 0)
     {
@@ -293,7 +316,16 @@ void createBoat(ComplexShape **boat)
     derivs.push_back(vec2(0.365f, 0.0273f));
     derivs.push_back(vec2(0.7267f, 0.3667f));
 
-    Shape *s1 = Shape::HermiteCurve(&program, 4, samples, derivs, vec4(1, 0, 0, 1), true, vec3(0, 0.2f, 0), vec4(1, 1, 0, 1));
+    vec4 stripe_col(0.35f, 0.0f, 0.0f, 1.0f);
+
+    Shape *s1 = Shape::HermiteCurve(&program, 4, samples, derivs, false, vec4(), true, vec3(0, 0.2f, 0), vec4());
+    s1->addUniformValue(VALUE_VEC2, "off", new Value<vec2>(vec2(BOAT_FIXED_X / WINDOW_WIDTH, 0.5f)));
+    s1->addUniformValue(VALUE_INT, "stripes", new Value<int>(40));
+    s1->addUniformValue(VALUE_FLOAT, "stripe_size", new Value<float>(0.2f));
+    s1->addUniformValue(VALUE_FLOAT, "angle", new Value<float>(0.0f));
+    s1->addUniformValue(VALUE_VEC4, "base_color", new Value<vec4>(vec4(0.4f, 0.15f, 0.0f, 1.0f)));
+    s1->addUniformValue(VALUE_VEC4, "stripe_color", new Value<vec4>(stripe_col));
+    s1->setShaderProgram(BOAT_SHADER_PROGRAM);
     s1->setScale(100);
     //////////
     ////////// mainmast
@@ -309,10 +341,11 @@ void createBoat(ComplexShape **boat)
 
     for (int i = 0; i < verticesRect.size(); i++)
     {
-        colorsRect.push_back(vec4(0.7f, 0.7f, 0.7f, 1));
+        colorsRect.push_back(vec4(0.25f, 0.0f, 0.0f, 1.0f));
     }
 
     Shape *s2 = new Shape(&program, verticesRect, colorsRect, GL_TRIANGLE_FAN);
+    s2->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     s2->setScale(80);
     s2->setPosition(0, 110);
     //////////
@@ -338,7 +371,8 @@ void createBoat(ComplexShape **boat)
     derivs.push_back(vec2(0.6037f, -0.002f));
     derivs.push_back(vec2(0, 0.644f));
 
-    Shape *s3 = Shape::HermiteCurve(&program, 4, samples, derivs, vec4(1, 1, 1, 1), true, vec3(0.6f, 0, 0), vec4(0.8, 0.8, 0.8, 1));
+    Shape *s3 = Shape::HermiteCurve(&program, 4, samples, derivs, true, vec4(1, 1, 1, 1), true, vec3(0.6f, 0, 0), vec4(0.8, 0.8, 0.8, 1));
+    s3->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     s3->setScale(70);
     s3->setPosition(0, 130);
     //////////
@@ -359,11 +393,13 @@ void createBoat(ComplexShape **boat)
     }
 
     Shape *s4 = new Shape(&program, verticesRect, colorsRect, GL_TRIANGLE_FAN);
+    s4->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     s4->setScale(50);
     s4->setPosition(40, 40);
     //////////
     ////////// hole
     Shape *s5 = Shape::circle(&program, 12, vec4(0, 0, 0, 1), vec4(0, 0, 0, 1));
+    s5->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     s5->setScale(10);
     s5->setPosition(40, 40);
     //////////
@@ -380,12 +416,15 @@ void createBoat(ComplexShape **boat)
 void createEnemies(Shape **e1, Shape **e2, Shape **e3)
 {
     (*e1) = Shape::circle(&program, 4, vec4(1, 0, 0, 1), vec4(0, 1, 0, 1));
+    (*e1)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     (*e1)->setScale(100);
     (*e1)->setEnabled(false);
     (*e2) = Shape::circle(&program, 4, vec4(0, 1, 0, 1), vec4(0, 0, 1, 1));
+    (*e2)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     (*e2)->setScale(100);
     (*e2)->setEnabled(false);
     (*e3) = Shape::circle(&program, 4, vec4(0, 0, 1, 1), vec4(1, 0, 0, 1));
+    (*e3)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     (*e3)->setScale(100);
     (*e3)->setEnabled(false);
 }
@@ -412,6 +451,7 @@ void createSea(Shape **sea)
     }
 
     (*sea) = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    (*sea)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     (*sea)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
     // (*sea)->setScale(50, 50);
     (*sea)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
@@ -436,8 +476,9 @@ int main(int argc, char *argv[])
     srand(time(0));
 
     w.init(argc, argv, title, 100, 100, drawCallback, updateCallback, 16, reshapeCallback);
-    GLProgramInstance *inst = program.createProgram("default", vshader, fshader);
-    program.useProgram(inst);
+
+    createShaderPrograms();
+
     cout << glGetError() << endl;
 
     glClearColor(0, 0.79f, 0.9f, 1.0f);
