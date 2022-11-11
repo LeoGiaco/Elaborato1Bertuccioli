@@ -38,6 +38,77 @@ void Shape2D::initShape()
 	glEnableVertexAttribArray(1);
 }
 
+void Shape2D::sendUniformValues()
+{
+	GLProgramInstance *inst = program->getUsedProgram();
+	glUniformMatrix4fv(inst->getUniformLocation((char *)"model"), 1, GL_FALSE, value_ptr(model));
+
+	auto it = uniformValues.begin();
+	for (size_t i = 0; i < uniformValues.size(); i++)
+	{
+		auto p = (*it);
+		string uniformName = p.first;
+		ValueBase *value = get<1>(p.second);
+		switch (get<0>(p.second))
+		{
+		case VALUE_INT:
+		{
+			int i = dynamic_cast<Value<int> *>(value)->get();
+			glUniform1i(inst->getUniformLocation(uniformName), i);
+			break;
+		}
+		case VALUE_FLOAT:
+		{
+			float f = dynamic_cast<Value<float> *>(value)->get();
+			glUniform1f(inst->getUniformLocation(uniformName), f);
+			break;
+		}
+		case VALUE_VEC2:
+		{
+			vec2 v2 = dynamic_cast<Value<vec2> *>(value)->get();
+			glUniform2f(inst->getUniformLocation(uniformName), v2.x, v2.y);
+			break;
+		}
+		case VALUE_VEC3:
+		{
+			vec3 v3 = dynamic_cast<Value<vec3> *>(value)->get();
+			glUniform3f(inst->getUniformLocation(uniformName), v3.x, v3.y, v3.z);
+			break;
+		}
+		case VALUE_VEC4:
+		{
+			vec4 v4 = dynamic_cast<Value<vec4> *>(value)->get();
+			glUniform4f(inst->getUniformLocation(uniformName), v4.x, v4.y, v4.z, v4.w);
+			break;
+		}
+		case VALUE_MAT3:
+		{
+			mat3 m3 = dynamic_cast<Value<mat3> *>(value)->get();
+			glUniformMatrix3fv(inst->getUniformLocation(uniformName), 1, GL_FALSE, value_ptr(m3));
+			break;
+		}
+		case VALUE_MAT4:
+		{
+			mat4 m4 = dynamic_cast<Value<mat4> *>(value)->get();
+			glUniformMatrix4fv(inst->getUniformLocation(uniformName), 1, GL_FALSE, value_ptr(m4));
+			break;
+		}
+		}
+
+		++it;
+	}
+}
+
+void Shape2D::addUniformValue(int valueType, string uniformName, ValueBase *value)
+{
+	uniformValues.insert_or_assign(uniformName, make_tuple(valueType, value));
+}
+
+void Shape2D::setShaderProgram(string shaderProgram)
+{
+	shapeShaders = shaderProgram;
+}
+
 float Shape2D::getCenterAngle()
 {
 	return centerAngle;
@@ -275,9 +346,9 @@ void Shape2D::draw()
 	if (enabled)
 	{
 		calculateModelIfUpdated();
-		GLint modelId = program->getUsedProgram()->getUniformLocation((char *)"model");
 
-		glUniformMatrix4fv(modelId, 1, GL_FALSE, value_ptr(model));
+		program->useProgram(shapeShaders);
+		sendUniformValues();
 
 		glBindVertexArray(VAO);
 		glDrawArrays(drawMode, 0, vertices.size());
@@ -331,7 +402,7 @@ void curvePiece(vec3 sPos, vec3 ePos, vec2 sDev, vec2 eDev, float sT, float eT, 
 	vertexArray->push_back(ePos);
 }
 
-Shape2D *Shape2D::HermiteCurve(GLProgram *program, int nPieceVertices, vector<vec3> samples, vector<vec2> derivatives,
+Shape2D *Shape2D::HermiteCurve(GLProgram *program, int nPieceVertices, vector<vec3> samples, vector<vec2> derivatives, bool colorsEnabled,
 							   vec4 color, bool fill, vec3 origin, vec4 centerColor)
 {
 	vector<vec3> vertices;
@@ -350,7 +421,8 @@ Shape2D *Shape2D::HermiteCurve(GLProgram *program, int nPieceVertices, vector<ve
 	if (fill)
 	{
 		vertices.push_back(origin); // Center used to create triangles.
-		colors.push_back(centerColor);
+		if (colorsEnabled)
+			colors.push_back(centerColor);
 	}
 
 	for (int i = 0; i < samples.size(); i++)
@@ -358,9 +430,12 @@ Shape2D *Shape2D::HermiteCurve(GLProgram *program, int nPieceVertices, vector<ve
 		curvePiece(samples[i], samples[(i + 1) % (samples.size())], derivatives[i], derivatives[(i + 1) % (samples.size())], i, i + 1, nPieceVertices, &vertices);
 	}
 
-	for (size_t i = 1; i < vertices.size(); i++)
+	if (colorsEnabled)
 	{
-		colors.push_back(color);
+		for (size_t i = 1; i < vertices.size(); i++)
+		{
+			colors.push_back(color);
+		}
 	}
 
 	return new Shape2D(program, vertices, colors, fill ? GL_TRIANGLE_FAN : GL_LINE_STRIP);

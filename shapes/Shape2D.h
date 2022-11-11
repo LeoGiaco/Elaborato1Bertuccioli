@@ -3,6 +3,41 @@
 #include "../core/lib.h"
 #include "../core/GLProgram.h"
 
+typedef int intVal;
+
+#define VALUE_INT 0
+#define VALUE_FLOAT 1
+#define VALUE_VEC2 2
+#define VALUE_VEC3 3
+#define VALUE_VEC4 4
+#define VALUE_MAT3 5
+#define VALUE_MAT4 6
+
+class ValueBase
+{
+public:
+    virtual ~ValueBase() {}
+};
+
+template <typename T>
+class Value : public ValueBase
+{
+    T value;
+
+public:
+    Value(T p)
+    {
+        value = p;
+    }
+
+    ~Value() {}
+
+    T get()
+    {
+        return value;
+    }
+};
+
 typedef class Shape2D
 {
 protected:
@@ -11,10 +46,12 @@ protected:
     GLuint VBO_colors;
     vector<vec3> vertices;
     vector<vec4> colors;
+    map<string, tuple<intVal, ValueBase *>> uniformValues = map<string, tuple<intVal, ValueBase *>>();
     GLenum drawMode;
     mat4 model;
 
     GLProgram *program;
+    string shapeShaders;
 
     vec3 scale;
     vec3 anchorScale;
@@ -31,8 +68,14 @@ protected:
 
     void initShape();
 
+    void sendUniformValues();
+
 public:
     Shape2D(GLProgram *program, vector<vec3> vertices, vector<vec4> colors, GLenum drawMode, bool doDynamicDraw = false);
+
+    void addUniformValue(int valueType, string uniformName, ValueBase *value);
+
+    void setShaderProgram(string shaderName);
 
     // Returns the angle of the shape around its center.
     virtual float getCenterAngle();
@@ -133,8 +176,8 @@ public:
     static Shape2D *circle(GLProgram *program, int nvertices, vec4 centerColor, vec4 color);
 
     // Creates the shape of a Hermite curve.
-    static Shape2D *HermiteCurve(GLProgram *program, int nPieceVertices, vector<vec3> samples, vector<vec2> derivatives,
-                                 vec4 color, bool fill = false, vec3 origin = vec3(0, 0, 0), vec4 centerColor = vec4(0, 0, 0, 0));
+    static Shape2D *HermiteCurve(GLProgram *program, int nPieceVertices, vector<vec3> samples, vector<vec2> derivatives, bool colorsEnabled = true,
+                                 vec4 color = vec4(0, 0, 0, 1), bool fill = false, vec3 origin = vec3(0, 0, 0), vec4 centerColor = vec4(0, 0, 0, 0));
 
     // Determines whether the shape has to be drawn on screen.
     virtual void setEnabled(bool enabled);
