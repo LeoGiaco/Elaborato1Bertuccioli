@@ -105,10 +105,25 @@ GLProgramInstance *GLProgram::getProgram(std::string programName)
 	return programs.find(programName)->second;
 }
 
+size_t GLProgram::programsCount()
+{
+	return programs.size();
+}
+
+map<string, GLProgramInstance *>::iterator GLProgram::getIterator()
+{
+	return programs.begin();
+}
+
 void GLProgram::useProgram(GLProgramInstance *instance)
 {
 	usedProgram = instance;
 	instance->useProgram();
+}
+
+void GLProgram::useProgram(string programName)
+{
+	useProgram(getProgram(programName));
 }
 
 GLProgramInstance *GLProgram::getUsedProgram()
@@ -124,6 +139,18 @@ GLProgramInstance::GLProgramInstance(GLuint id)
 void GLProgramInstance::useProgram()
 {
 	glUseProgram(id);
+	glUniformMatrix4fv(getUniformLocation("projection"), 1, GL_FALSE, value_ptr(projection));
+	glUniform2f(getUniformLocation("resolution"), resolution.x, resolution.y);
+}
+
+void GLProgramInstance::setProjectionMatrix(mat4 matrix)
+{
+	projection = matrix;
+}
+
+void GLProgramInstance::setResolution(vec2 res)
+{
+	resolution = res;
 }
 
 GLuint GLProgramInstance::getID()
@@ -131,7 +158,7 @@ GLuint GLProgramInstance::getID()
 	return id;
 }
 
-GLint GLProgramInstance::getUniformLocation(char *varName)
+GLint GLProgramInstance::getUniformLocation(string varName)
 {
-	return glGetUniformLocation(id, varName);
+	return glGetUniformLocation(id, varName.c_str());
 }
