@@ -1,2 +1,2 @@
-TODO: creare 1-3 tipi di nemici (sasso prima)
-TODO: aggiungere shader nemici che li fa lampeggiare di rosso quando colpiti
+TODO: creare un ultimo nemico
+TODO: aggiungere commenti un po' ovunque
