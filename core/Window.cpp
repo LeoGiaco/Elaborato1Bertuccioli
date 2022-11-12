@@ -51,22 +51,26 @@ void Window::reshape(int w, int h)
     width = w;
     height = h;
 
-    if (ratio > w / h)
+    if (ratio > (float)w / h)
     {
-        glViewport(0, 0, w, w / ratio);
+        float diff = h - w / ratio;
+        glViewport(0, diff / 2, w, w / ratio);
         for (size_t i = 0; i < glProgram->programsCount(); i++)
         {
             GLProgramInstance *inst = (*it).second;
             inst->setResolution(vec2((float)w, w / ratio));
+            ++it;
         }
     }
     else
     {
-        glViewport(0, 0, h * ratio, h);
+        float diff = w - h * ratio;
+        glViewport(diff / 2, 0, h * ratio, h);
         for (size_t i = 0; i < glProgram->programsCount(); i++)
         {
             GLProgramInstance *inst = (*it).second;
             inst->setResolution(vec2(h * ratio, (float)h));
+            ++it;
         }
     }
 }
