@@ -6,9 +6,25 @@ ComplexShape2D::ComplexShape2D(GLProgram *program)
     enabled = true;
 }
 
-void ComplexShape::addShape(Shape2D *shape)
+void ComplexShape2D::addShape(Shape2D *shape)
 {
     shapes.push_back(shape);
+}
+
+void ComplexShape2D::addUniformValue(int valueType, string uniformName, ValueBase *value)
+{
+    for (size_t i = 0; i < shapes.size(); i++)
+    {
+        shapes[i]->addUniformValue(valueType, uniformName, value);
+    }
+}
+
+void ComplexShape2D::setShaderProgram(string shaderName)
+{
+    for (size_t i = 0; i < shapes.size(); i++)
+    {
+        shapes[i]->setShaderProgram(shaderName);
+    }
 }
 
 Shape **ComplexShape::getShape(int shapeNum)

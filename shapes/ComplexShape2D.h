@@ -7,7 +7,12 @@ private:
 
 public:
     ComplexShape2D(GLProgram *program);
+
     void addShape(Shape2D *shape);
+
+    virtual void addUniformValue(int valueType, string uniformName, ValueBase *value);
+
+    virtual void setShaderProgram(string shaderName);
 
     Shape **getShape(int shapeNum);
 

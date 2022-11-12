@@ -73,9 +73,9 @@ protected:
 public:
     Shape2D(GLProgram *program, vector<vec3> vertices, vector<vec4> colors, GLenum drawMode, bool doDynamicDraw = false);
 
-    void addUniformValue(int valueType, string uniformName, ValueBase *value);
+    virtual void addUniformValue(int valueType, string uniformName, ValueBase *value);
 
-    void setShaderProgram(string shaderName);
+    virtual void setShaderProgram(string shaderName);
 
     // Returns the angle of the shape around its center.
     virtual float getCenterAngle();
