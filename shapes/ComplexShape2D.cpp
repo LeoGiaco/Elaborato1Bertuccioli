@@ -3,6 +3,7 @@
 ComplexShape2D::ComplexShape2D(GLProgram *program)
     : Shape2D(program, vector<vec3>(), vector<vec4>(), 0, false), shapes(vector<Shape2D *>())
 {
+    enabled = true;
 }
 
 void ComplexShape::addShape(Shape2D *shape)
@@ -287,6 +288,41 @@ void ComplexShape2D::calculateModelIfUpdated()
     }
 }
 
+void ComplexShape2D::setEnabled(bool enabled)
+{
+    this->enabledNextFrame = enabled;
+}
+
+vector<vec3> ComplexShape2D::getBoxCollider()
+{
+    vector<vec3> box_collider;
+    float minX = INFINITY, minY = INFINITY, maxX = -INFINITY, maxY = -INFINITY;
+
+    for (size_t i = 0; i < shapes.size(); i++)
+    {
+        vector<vec3> coll = shapes[i]->getBoxCollider();
+        for (size_t j = 0; j < coll.size(); j++)
+        {
+            vec3 v = coll[j];
+
+            if (minX > v.x)
+                minX = v.x;
+            else if (maxX < v.x)
+                maxX = v.x;
+
+            if (minY > v.y)
+                minY = v.y;
+            else if (maxY < v.y)
+                maxY = v.y;
+        }
+    }
+
+    box_collider.push_back(vec3(minX, minY, 0));
+    box_collider.push_back(vec3(maxX, maxY, 0));
+
+    return box_collider;
+}
+
 void ComplexShape2D::draw()
 {
     if (enabled)
@@ -296,4 +332,5 @@ void ComplexShape2D::draw()
             shapes[i]->draw();
         }
     }
+    enabled = enabledNextFrame;
 }

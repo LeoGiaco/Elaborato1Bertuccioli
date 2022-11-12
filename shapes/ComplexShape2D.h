@@ -109,6 +109,10 @@ public:
     // Recalculates the model of all sub-shapes.
     void calculateModelIfUpdated() override;
 
+    void setEnabled(bool enabled);
+
+    vector<vec3> getBoxCollider();
+
     // Draws all sub-shapes.
     virtual void draw() override;
 } ComplexShape;

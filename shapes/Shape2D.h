@@ -185,7 +185,7 @@ public:
     // Draws the shape.
     virtual void draw();
 
-    vector<vec3> getBoxCollider();
+    virtual vector<vec3> getBoxCollider();
 
     bool isColliding(Shape2D *other);
 } Shape;
