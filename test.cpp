@@ -16,7 +16,10 @@
 #define WAVE_MAX_HEIGHT_NORM (20.0f / WINDOW_HEIGHT)
 #define WAVE_MAX_HEIGHT (WINDOW_HEIGHT * WAVE_MAX_HEIGHT_NORM)
 
+#define WAVES_DIST 60
+
 #define BOAT_FIXED_X (WINDOW_WIDTH / 5.0f)
+#define MIN_ENEMY_X (WINDOW_WIDTH * 0.6f)
 
 #define MOD(f1, f2) ((f1) - (f2)*floorf((f1) / (f2)))
 
@@ -32,25 +35,29 @@ char *title = (char *)"Prova";
 
 GLProgram program;
 Scene scene;
-list<tuple<Bullet *, Shape *>> projectiles;
 
 mat4 projection = ortho(0.0f, (float)WINDOW_WIDTH, 0.0f, (float)WINDOW_HEIGHT);
 Window w(&program, &scene, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-Shape *sea;
-ComplexShape *boat;
-Shape *enemy1, *enemy2, *enemy3, **activeEnemy = &enemy1;
+Shape *bg;
 
+Shape *wave0, *wave1, *wave2, *wave3, *wave4;
+float waveRelX0 = 0, waveRelX1 = 0, waveRelX2 = 0, waveRelX3 = 0, waveRelX4 = 0;
+
+ComplexShape *boat;
 float reload = 0;
 int moving = 0, dir = 1;
 float relBoatX = 0, boatMovementDeltaX = 0;
-
 int cannonAngleMovement = 0;
+list<tuple<Bullet *, Shape *>> projectiles;
 
-float waveRel = 0;
+#define INITIAL_ENEMY_X 1800.0f
+#define ENEMY_X_DELTA 1000.0f
 
-float enemyX = 0;
-float enemyHealth = 5;
+Shape *enemy1, *enemy2, *enemy3, **activeEnemy = &enemy1;
+bool firstEnemy = true;
+float enemyX = INITIAL_ENEMY_X;
+float enemyHealth = 1;
 
 void createShaderPrograms()
 {
@@ -58,10 +65,13 @@ void createShaderPrograms()
     char *fshaderDef = (char *)"shaders/fragmentShader.glsl";
     char *vshaderBoat = (char *)"shaders/vertexShaderBoat.glsl";
     char *fshaderBoat = (char *)"shaders/fragmentShaderBoat.glsl";
+    char *fshaderSea = (char *)"shaders/fragmentShaderWater.glsl";
 
     GLProgramInstance *inst = program.createProgram(DEFAULT_SHADER_PROGRAM, vshaderDef, fshaderDef);
     inst->setProjectionMatrix(projection);
     inst = program.createProgram(BOAT_SHADER_PROGRAM, vshaderBoat, fshaderBoat);
+    inst->setProjectionMatrix(projection);
+    inst = program.createProgram(SEA_SHADER_PROGRAM, vshaderDef, fshaderSea);
     inst->setProjectionMatrix(projection);
     program.useProgram(inst);
 }
@@ -84,7 +94,15 @@ void chooseNextEnemy()
         break;
     }
 
-    enemyX += 1800.0f;
+    enemyHealth = 1;
+    if (!firstEnemy)
+    {
+        enemyX += ENEMY_X_DELTA;
+    }
+    else
+    {
+        firstEnemy = false;
+    }
     (*activeEnemy)->setEnabled(true);
 }
 
@@ -154,13 +172,21 @@ void updateCallback(int v)
     if (reload > 0)
         reload -= DELTA_T;
 
-    waveRel -= 30 * DELTA_T;
+    waveRelX0 -= 60 * DELTA_T;
+    waveRelX1 -= 30 * DELTA_T;
+    waveRelX2 -= 80 * DELTA_T;
+    waveRelX3 -= 140 * DELTA_T;
+    waveRelX4 -= 190 * DELTA_T;
 
     boatMovementDeltaX = moving * 200 * DELTA_T;
+    if (enemyX - (relBoatX + boatMovementDeltaX) < MIN_ENEMY_X)
+    {
+        boatMovementDeltaX = enemyX - MIN_ENEMY_X - relBoatX;
+    }
     relBoatX += boatMovementDeltaX;
 
-    float angle = getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRel);
-    float wHeight = getWaveHeight(BOAT_FIXED_X + relBoatX - waveRel) - 10.0f;
+    float angle = getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRelX1);
+    float wHeight = getWaveHeight(BOAT_FIXED_X + relBoatX - waveRelX1) - 10.0f;
 
     (*(boat->getShape(2)))->addUniformValue(VALUE_VEC2, "off", new Value<vec2>(vec2(BOAT_FIXED_X / WINDOW_WIDTH, wHeight / WINDOW_HEIGHT)));
     (*(boat->getShape(2)))->addUniformValue(VALUE_FLOAT, "angle", new Value<float>(angle));
@@ -175,11 +201,15 @@ void updateCallback(int v)
         (*cannon)->setRotation(cannonAngle);
     }
 
-    sea->setX(-MOD(relBoatX - waveRel, WAVE_WIDTH)); // The wave moves in the negative x
+    wave0->setX(-MOD(relBoatX - waveRelX0, WAVE_WIDTH)); // The wave moves in the negative x.
+    wave1->setX(-MOD(relBoatX - waveRelX1, WAVE_WIDTH)); // The wave moves in the negative x.
+    wave2->setX(-MOD(relBoatX - waveRelX2, WAVE_WIDTH));
+    wave3->setX(-MOD(relBoatX - waveRelX3, WAVE_WIDTH));
+    wave4->setX(-MOD(relBoatX - waveRelX4, WAVE_WIDTH));
 
-    (*activeEnemy)->setRotation(getWaveTangentAngle(enemyX - waveRel) + radians(45.0f));
-    (*activeEnemy)->setX(enemyX - relBoatX);
-    (*activeEnemy)->setY(getWaveHeight(enemyX - waveRel) + 30.0f);
+    (*activeEnemy)->setRotationAroundAnchor(getWaveTangentAngle(enemyX - waveRelX1));
+    (*activeEnemy)->setAnchorX(enemyX - relBoatX);
+    (*activeEnemy)->setAnchorY(getWaveHeight(enemyX - waveRelX1) + 30.0f);
 
     vector<tuple<Bullet *, Shape *>> removed;
 
@@ -209,7 +239,6 @@ void updateCallback(int v)
             enemyHealth--;
             if (enemyHealth <= 0)
             {
-                enemyHealth = 5;
                 chooseNextEnemy();
             }
         }
@@ -292,6 +321,29 @@ void keyboardCallbackUpSp(int key, int mouseX, int mouseY)
 #pragma endregion
 
 #pragma region shapes
+void createBackground(Shape **bg)
+{
+    vector<vec3> vertices;
+    vector<vec4> colors;
+
+    vertices.push_back(vec3(-1, -1, 0));
+    vertices.push_back(vec3(1, -1, 0));
+    vertices.push_back(vec3(1, 1, 0));
+    vertices.push_back(vec3(1, 1, 0));
+    vertices.push_back(vec3(-1, 1, 0));
+    vertices.push_back(vec3(-1, -1, 0));
+
+    for (size_t i = 0; i < vertices.size(); i++)
+    {
+        colors.push_back(vec4(0, 0.79f, 0.9f, 1.0f));
+    }
+
+    (*bg) = new Shape(&program, vertices, colors, GL_TRIANGLES);
+    (*bg)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+    (*bg)->setScale(WINDOW_WIDTH, WINDOW_HEIGHT);
+    (*bg)->setPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
+}
+
 void createBoat(ComplexShape **boat)
 {
     ////////// boat
@@ -415,29 +467,158 @@ void createBoat(ComplexShape **boat)
 
 void createEnemies(Shape **e1, Shape **e2, Shape **e3)
 {
-    (*e1) = Shape::circle(&program, 4, vec4(1, 0, 0, 1), vec4(0, 1, 0, 1));
+    vector<vec3> vertices;
+    vector<vec4> colors;
+
+    vertices.push_back(vec3(0, 0, 0));
+    vertices.push_back(vec3(0, -0.3155f, 0));
+    vertices.push_back(vec3(0.4896f, -0.2108f, 0));
+    vertices.push_back(vec3(0.729f, 0.3835f, 0));
+    vertices.push_back(vec3(0.4556f, 0.4379f, 0));
+    vertices.push_back(vec3(0.4828f, 0.835f, 0));
+    vertices.push_back(vec3(0.3672f, 0.918f, 0));
+    vertices.push_back(vec3(-0.0789f, 0.7562f, 0));
+    vertices.push_back(vec3(-0.3128, 0.9112f, 0));
+    vertices.push_back(vec3(-0.4284f, 0.8935f, 0));
+    vertices.push_back(vec3(-0.5549f, 0.4447f, 0));
+    vertices.push_back(vec3(-0.748f, 0.1578f, 0));
+    vertices.push_back(vec3(-0.4012f, -0.2938f, 0));
+    vertices.push_back(vec3(0, -0.3155f, 0));
+
+    colors.push_back(vec4(0, 0, 0, 1));
+    for (int i = 0; i < vertices.size() - 1; i++)
+    {
+        colors.push_back(vec4(0.2f, 0.2f, 0.2f, 1.0f));
+    }
+
+    (*e1) = new Shape2D(&program, vertices, colors, GL_TRIANGLE_FAN);
     (*e1)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     (*e1)->setScale(100);
+    (*e1)->setY(-20);
     (*e1)->setEnabled(false);
-    (*e2) = Shape::circle(&program, 4, vec4(0, 1, 0, 1), vec4(0, 0, 1, 1));
+    ///////////////
+    vertices.clear();
+    colors.clear();
+
+    vertices.push_back(vec3(0, -0.05f, 0));
+    vertices.push_back(vec3(-0.7808f, -0.0223f, 0));
+    vertices.push_back(vec3(-0.9581f, -0.0447f, 0));
+    vertices.push_back(vec3(-0.4723f, -0.2593f, 0));
+    vertices.push_back(vec3(-0.0283f, -0.2637f, 0));
+    vertices.push_back(vec3(0.365f, -0.1967f, 0));
+    vertices.push_back(vec3(0.6809f, -0.0775f, 0));
+    vertices.push_back(vec3(0.6809f, 0.0775f, 0));
+    vertices.push_back(vec3(0.377f, 0.225f, 0));
+    vertices.push_back(vec3(0.0447f, 0.2801f, 0));
+    vertices.push_back(vec3(-0.5126f, 0.2831f, 0));
+    vertices.push_back(vec3(-0.9715f, 0.1058f, 0));
+    vertices.push_back(vec3(-0.8091f, 0.0372f, 0));
+    vertices.push_back(vec3(-0.7808f, -0.0223f, 0));
+
+    vec4 darkgray(0.3f, 0.3f, 0.3f, 1);
+    vec4 lightgray(0.8f, 0.8f, 0.8f, 1);
+
+    colors.push_back(darkgray);
+    colors.push_back(darkgray);
+    for (int i = 0; i < 5; i++)
+    {
+        colors.push_back(vec4(lightgray));
+    }
+    while (colors.size() < vertices.size())
+    {
+        colors.push_back(darkgray);
+    }
+
+    Shape *sharkBody = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    sharkBody->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+    sharkBody->shiftY(-70);
+
+    vector<vec3> finTailVertices;
+    vector<vec4> finTailColors;
+
+    finTailVertices.push_back(vec3(0.75f, 0, 0));
+    finTailVertices.push_back(vec3(0.6809f, -0.0775f, 0));
+    finTailVertices.push_back(vec3(0.9327f, -0.2607f, 0));
+    finTailVertices.push_back(vec3(0.8329f, 0, 0));
+    finTailVertices.push_back(vec3(0.9327f, 0.2771f, 0));
+    finTailVertices.push_back(vec3(0.6809f, 0.0775f, 0));
+    finTailVertices.push_back(vec3(0.6809f, -0.0775f, 0));
+
+    for (size_t i = 0; i < finTailVertices.size() - 1; i++)
+    {
+        finTailColors.push_back(darkgray);
+    }
+    finTailColors.push_back(lightgray);
+    finTailColors[1] = lightgray;
+
+    Shape *sharkTailFin = new Shape(&program, finTailVertices, finTailColors, GL_TRIANGLE_FAN);
+    sharkTailFin->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+    sharkTailFin->setPosition(-0.02f, 0);
+    sharkTailFin->shiftY(-70);
+
+    vector<vec3> finBackVertices;
+    vector<vec4> finBackColors;
+
+    finBackVertices.push_back(vec3(0.0447f, 0.2801f, 0));
+    finBackVertices.push_back(vec3(0.0536f, 0.5945f, 0));
+    finBackVertices.push_back(vec3(-0.5126f, 0.2831f, 0));
+
+    finBackColors.push_back(darkgray);
+    finBackColors.push_back(darkgray);
+    finBackColors.push_back(darkgray);
+
+    Shape *sharkBackFin = new Shape(&program, finBackVertices, finBackColors, GL_TRIANGLES);
+    sharkBackFin->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+    sharkBackFin->setPosition(0, -0.02f);
+    sharkBackFin->shiftY(-70);
+
+    vertices.clear();
+    colors.clear();
+
+#define EYE_DELTA 0.03f
+
+    vertices.push_back(vec3(-0.6958f, 0.1401, 0));
+    vertices.push_back(vec3(-0.6958f - EYE_DELTA, 0.1401, 0));
+    vertices.push_back(vec3(-0.6958f, 0.1401 - EYE_DELTA, 0));
+    vertices.push_back(vec3(-0.6958f + EYE_DELTA, 0.1401, 0));
+    vertices.push_back(vec3(-0.6958f, 0.1401 + EYE_DELTA, 0));
+    vertices.push_back(vec3(-0.6958f - EYE_DELTA, 0.1401, 0));
+
+    for (size_t i = 0; i < vertices.size(); i++)
+    {
+        colors.push_back(vec4(0, 0, 0, 1));
+    }
+
+    Shape *sharkEye = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    sharkEye->shiftY(-70);
+    sharkEye->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+
+    ComplexShape *shark = new ComplexShape(&program);
+    shark->addShape(sharkBody);
+    shark->addShape(sharkTailFin);
+    shark->addShape(sharkBackFin);
+    shark->addShape(sharkEye);
+    shark->setScale(100);
+    (*e2) = shark;
     (*e2)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
-    (*e2)->setScale(100);
     (*e2)->setEnabled(false);
+    ///////////////
     (*e3) = Shape::circle(&program, 4, vec4(0, 0, 1, 1), vec4(1, 0, 0, 1));
     (*e3)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     (*e3)->setScale(100);
     (*e3)->setEnabled(false);
+    ///////////////
 }
 
-void createSea(Shape **sea)
+void createSea(Shape **wave0, Shape **wave1, Shape **wave2, Shape **wave3, Shape **wave4)
 {
     vector<vec3> vertices;
     vector<vec4> colors;
 
     vertices.push_back(vec3(0, -2.0f, 0));
     vertices.push_back(vec3(-1.0f, 0, 0));
-    vertices.push_back(vec3(-1.0f, -1.0f, 0));
-    vertices.push_back(vec3(1.0f + WAVE_WIDTH_NORM, -1.0f, 0));
+    vertices.push_back(vec3(-1.0f, -1.3f, 0));
+    vertices.push_back(vec3(1.0f + WAVE_WIDTH_NORM, -1.3f, 0));
 
     for (int i = 0; i < WAVES_POINTS; i++)
     {
@@ -447,33 +628,88 @@ void createSea(Shape **sea)
 
     for (int i = 0; i < vertices.size(); i++)
     {
-        colors.push_back(vec4(0, 0.3f, 0.75f, 0.8f));
+        colors.push_back(vec4(0, 0.3f, 0.75f, 1.0f));
     }
 
-    (*sea) = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
-    (*sea)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
-    (*sea)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
-    // (*sea)->setScale(50, 50);
-    (*sea)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
+    (*wave0) = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    (*wave0)->setShaderProgram(SEA_SHADER_PROGRAM);
+    (*wave0)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
+    (*wave0)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f + WAVES_DIST);
+
+    colors.clear();
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        colors.push_back(vec4(0, 0.1f, 0.55f, 1.0f));
+    }
+
+    (*wave1) = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    (*wave1)->setShaderProgram(SEA_SHADER_PROGRAM);
+    (*wave1)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
+    (*wave1)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
+
+    colors.clear();
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        colors.push_back(vec4(0, 0.1f, 0.55f, 1.0f));
+    }
+
+    (*wave2) = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    (*wave2)->setShaderProgram(SEA_SHADER_PROGRAM);
+    (*wave2)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
+    (*wave2)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - WAVES_DIST);
+
+    colors.clear();
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        colors.push_back(vec4(0, 0, 0.3f, 1.0f));
+    }
+
+    (*wave3) = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    (*wave3)->setShaderProgram(SEA_SHADER_PROGRAM);
+    (*wave3)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
+    (*wave3)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - 2 * WAVES_DIST);
+
+    colors.clear();
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        colors.push_back(vec4(0, 0, 0, 1.0f));
+    }
+
+    (*wave4) = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
+    (*wave4)->setShaderProgram(SEA_SHADER_PROGRAM);
+    (*wave4)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
+    (*wave4)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - 3 * WAVES_DIST);
 }
 #pragma endregion
 
 void createShapes()
 {
+    createBackground(&bg);
     createBoat(&boat);
     createEnemies(&enemy1, &enemy2, &enemy3);
-    createSea(&sea);
+    createSea(&wave0, &wave1, &wave2, &wave3, &wave4);
 
+    scene.addShape(bg);
+    scene.addShape(wave0);
     scene.addShape(boat);
-    scene.addShape(sea);
     scene.addShape(enemy1);
     scene.addShape(enemy2);
     scene.addShape(enemy3);
+    scene.addShape(wave4);
+    scene.addShape(wave3);
+    scene.addShape(wave2);
+    scene.addShape(wave1);
 }
 
 int main(int argc, char *argv[])
 {
     srand(time(0));
+
+    waveRelX0 = rand() % (int)WAVE_WIDTH;
+    waveRelX1 = rand() % (int)WAVE_WIDTH;
+    waveRelX2 = rand() % (int)WAVE_WIDTH;
+    waveRelX3 = rand() % (int)WAVE_WIDTH;
+    waveRelX4 = rand() % (int)WAVE_WIDTH;
 
     w.init(argc, argv, title, 100, 100, drawCallback, updateCallback, 16, reshapeCallback);
 
@@ -481,7 +717,7 @@ int main(int argc, char *argv[])
 
     cout << glGetError() << endl;
 
-    glClearColor(0, 0.79f, 0.9f, 1.0f);
+    glClearColor(0, 0, 0, 0);
 
     createShapes();
     chooseNextEnemy();
