@@ -30,6 +30,7 @@
 #define DEFAULT_SHADER_PROGRAM "default"
 #define BOAT_SHADER_PROGRAM "boat"
 #define SEA_SHADER_PROGRAM "sea"
+#define ENEMY_SHADER_PROGRAM "enemy"
 
 char *title = (char *)"Prova";
 
@@ -57,7 +58,7 @@ list<tuple<Bullet *, Shape *>> projectiles;
 Shape *enemy1, *enemy2, *enemy3, **activeEnemy = &enemy1;
 bool firstEnemy = true;
 float enemyX = INITIAL_ENEMY_X;
-float enemyHealth = 1;
+float enemyHealth;
 
 void createShaderPrograms()
 {
@@ -66,14 +67,12 @@ void createShaderPrograms()
     char *vshaderBoat = (char *)"shaders/vertexShaderBoat.glsl";
     char *fshaderBoat = (char *)"shaders/fragmentShaderBoat.glsl";
     char *fshaderSea = (char *)"shaders/fragmentShaderWater.glsl";
+    char *fshaderEnemy = (char *)"shaders/fragmentShaderEnemy.glsl";
 
-    GLProgramInstance *inst = program.createProgram(DEFAULT_SHADER_PROGRAM, vshaderDef, fshaderDef);
-    inst->setProjectionMatrix(projection);
-    inst = program.createProgram(BOAT_SHADER_PROGRAM, vshaderBoat, fshaderBoat);
-    inst->setProjectionMatrix(projection);
-    inst = program.createProgram(SEA_SHADER_PROGRAM, vshaderDef, fshaderSea);
-    inst->setProjectionMatrix(projection);
-    program.useProgram(inst);
+    program.createProgram(DEFAULT_SHADER_PROGRAM, vshaderDef, fshaderDef)->setProjectionMatrix(projection);
+    program.createProgram(BOAT_SHADER_PROGRAM, vshaderBoat, fshaderBoat)->setProjectionMatrix(projection);
+    program.createProgram(SEA_SHADER_PROGRAM, vshaderDef, fshaderSea)->setProjectionMatrix(projection);
+    program.createProgram(ENEMY_SHADER_PROGRAM, vshaderDef, fshaderEnemy)->setProjectionMatrix(projection);
 }
 
 void chooseNextEnemy()
@@ -94,7 +93,7 @@ void chooseNextEnemy()
         break;
     }
 
-    enemyHealth = 1;
+    enemyHealth = 5;
     if (!firstEnemy)
     {
         enemyX += ENEMY_X_DELTA;
@@ -165,6 +164,11 @@ void fire()
 void drawCallback()
 {
     w.drawScene();
+}
+
+void enemyReturnsNormal(int v)
+{
+    (*activeEnemy)->addUniformValue(VALUE_INT, "hit", new Value<int>(0));
 }
 
 void updateCallback(int v)
@@ -240,6 +244,11 @@ void updateCallback(int v)
             if (enemyHealth <= 0)
             {
                 chooseNextEnemy();
+            }
+            else
+            {
+                (*activeEnemy)->addUniformValue(VALUE_INT, "hit", new Value<int>(1));
+                glutTimerFunc(200, enemyReturnsNormal, 0);
             }
         }
 
@@ -492,7 +501,8 @@ void createEnemies(Shape **e1, Shape **e2, Shape **e3)
     }
 
     (*e1) = new Shape2D(&program, vertices, colors, GL_TRIANGLE_FAN);
-    (*e1)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+    (*e1)->addUniformValue(VALUE_INT, "hit", new Value<int>(0));
+    (*e1)->setShaderProgram(ENEMY_SHADER_PROGRAM);
     (*e1)->setScale(100);
     (*e1)->setY(-20);
     (*e1)->setEnabled(false);
@@ -530,7 +540,6 @@ void createEnemies(Shape **e1, Shape **e2, Shape **e3)
     }
 
     Shape *sharkBody = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
-    sharkBody->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     sharkBody->shiftY(-70);
 
     vector<vec3> finTailVertices;
@@ -552,7 +561,6 @@ void createEnemies(Shape **e1, Shape **e2, Shape **e3)
     finTailColors[1] = lightgray;
 
     Shape *sharkTailFin = new Shape(&program, finTailVertices, finTailColors, GL_TRIANGLE_FAN);
-    sharkTailFin->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     sharkTailFin->setPosition(-0.02f, 0);
     sharkTailFin->shiftY(-70);
 
@@ -561,14 +569,13 @@ void createEnemies(Shape **e1, Shape **e2, Shape **e3)
 
     finBackVertices.push_back(vec3(0.0447f, 0.2801f, 0));
     finBackVertices.push_back(vec3(0.0536f, 0.5945f, 0));
-    finBackVertices.push_back(vec3(-0.5126f, 0.2831f, 0));
+    finBackVertices.push_back(vec3(-0.3084f, 0.2727f, 0));
 
+    finBackColors.push_back(darkgray - vec4(0.1f, 0.1f, 0.1f, 0));
     finBackColors.push_back(darkgray);
-    finBackColors.push_back(darkgray);
-    finBackColors.push_back(darkgray);
+    finBackColors.push_back(darkgray - vec4(0.1f, 0.1f, 0.1f, 0));
 
     Shape *sharkBackFin = new Shape(&program, finBackVertices, finBackColors, GL_TRIANGLES);
-    sharkBackFin->setShaderProgram(DEFAULT_SHADER_PROGRAM);
     sharkBackFin->setPosition(0, -0.02f);
     sharkBackFin->shiftY(-70);
 
@@ -591,20 +598,21 @@ void createEnemies(Shape **e1, Shape **e2, Shape **e3)
 
     Shape *sharkEye = new Shape(&program, vertices, colors, GL_TRIANGLE_FAN);
     sharkEye->shiftY(-70);
-    sharkEye->setShaderProgram(DEFAULT_SHADER_PROGRAM);
 
     ComplexShape *shark = new ComplexShape(&program);
     shark->addShape(sharkBody);
     shark->addShape(sharkTailFin);
     shark->addShape(sharkBackFin);
     shark->addShape(sharkEye);
-    shark->setScale(100);
+    shark->setScale(200);
     (*e2) = shark;
-    (*e2)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+    (*e2)->addUniformValue(VALUE_INT, "hit", new Value<int>(0));
+    (*e2)->setShaderProgram(ENEMY_SHADER_PROGRAM);
     (*e2)->setEnabled(false);
     ///////////////
     (*e3) = Shape::circle(&program, 4, vec4(0, 0, 1, 1), vec4(1, 0, 0, 1));
-    (*e3)->setShaderProgram(DEFAULT_SHADER_PROGRAM);
+    (*e3)->addUniformValue(VALUE_INT, "hit", new Value<int>(0));
+    (*e3)->setShaderProgram(ENEMY_SHADER_PROGRAM);
     (*e3)->setScale(100);
     (*e3)->setEnabled(false);
     ///////////////
