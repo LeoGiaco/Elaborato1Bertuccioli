@@ -35,14 +35,14 @@ private:
     map<std::string, GLProgramInstance *> programs;
     GLProgramInstance *usedProgram;
 
-    char *readShaderSource(const char *shaderFile);
+    char *readShaderSource(string shaderFile);
 
 public:
     // Creates a new shader program and returns it.
-    GLProgramInstance *createProgram(std::string programName, char *vShaderName, char *fShaderName);
+    GLProgramInstance *createProgram(string programName, string vShaderName, string fShaderName);
 
     // Returns the shader program with the given name.
-    GLProgramInstance *getProgram(std::string programName);
+    GLProgramInstance *getProgram(string programName);
 
     // Returns the number of created shader programs.
     size_t programsCount();

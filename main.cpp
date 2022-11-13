@@ -5,6 +5,8 @@
 #include "./core/Scene.h"
 #include "./entities/Bullet.h"
 
+#define PROJECT_FOLDER "./"
+
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
 #define DELTA_T (16.0f / 1000)
@@ -63,13 +65,21 @@ float enemyHealth;
 
 void createShaderPrograms()
 {
-    char *vshaderDef = (char *)"shaders/vertexShader.glsl";
-    char *fshaderDef = (char *)"shaders/fragmentShader.glsl";
-    char *vshaderBoat = (char *)"shaders/vertexShaderBoat.glsl";
-    char *fshaderBoat = (char *)"shaders/fragmentShaderBoat.glsl";
-    char *fshaderSea = (char *)"shaders/fragmentShaderWater.glsl";
-    char *fshaderEnemy = (char *)"shaders/fragmentShaderEnemy.glsl";
-    char *fshaderEnemyBoat = (char *)"shaders/fragmentShaderEnemyBoat.glsl";
+    string vshaderDef = PROJECT_FOLDER;
+    string fshaderDef = PROJECT_FOLDER;
+    string vshaderBoat = PROJECT_FOLDER;
+    string fshaderBoat = PROJECT_FOLDER;
+    string fshaderSea = PROJECT_FOLDER;
+    string fshaderEnemy = PROJECT_FOLDER;
+    string fshaderEnemyBoat = PROJECT_FOLDER;
+
+    vshaderDef.append("shaders/vertexShader.glsl");
+    fshaderDef.append("shaders/fragmentShader.glsl");
+    vshaderBoat.append("shaders/vertexShaderBoat.glsl");
+    fshaderBoat.append("shaders/fragmentShaderBoat.glsl");
+    fshaderSea.append("shaders/fragmentShaderWater.glsl");
+    fshaderEnemy.append("shaders/fragmentShaderEnemy.glsl");
+    fshaderEnemyBoat.append("shaders/fragmentShaderEnemyBoat.glsl");
 
     program.createProgram(DEFAULT_SHADER_PROGRAM, vshaderDef, fshaderDef)->setProjectionMatrix(projection);
     program.createProgram(BOAT_SHADER_PROGRAM, vshaderBoat, fshaderBoat)->setProjectionMatrix(projection);

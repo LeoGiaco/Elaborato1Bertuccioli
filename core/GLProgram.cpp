@@ -4,9 +4,9 @@
 
 #pragma warning(disable : 4996)
 
-char *GLProgram::readShaderSource(const char *shaderFile)
+char *GLProgram::readShaderSource(string shaderFile)
 {
-	FILE *fp = fopen(shaderFile, "rb");
+	FILE *fp = fopen(shaderFile.c_str(), "rb");
 
 	if (fp == NULL)
 	{
@@ -26,7 +26,7 @@ char *GLProgram::readShaderSource(const char *shaderFile)
 	return buf;
 }
 
-GLProgramInstance *GLProgram::createProgram(std::string programName, char *vertexfilename, char *fragmentfilename)
+GLProgramInstance *GLProgram::createProgram(std::string programName, string vertexfilename, string fragmentfilename)
 {
 	GLenum ErrorCheckValue = glGetError();
 	int success;
