@@ -1,13 +1,13 @@
 SHELL=/bin/bash
 FLAGS=-g -I ./core -I ./shapes -lglut -lGLU -lGL -lGLEW
 
-all: test.out
+all: main.out
 
-test.out: ./bin/test.o ./bin/Window.o ./bin/GLProgram.o ./bin/Scene.o ./bin/Shape2D.o ./bin/ComplexShape2D.o ./bin/Bullet.o
-	g++ -o test.out ./bin/*.o ${FLAGS}
+main.out: ./bin/main.o ./bin/Window.o ./bin/GLProgram.o ./bin/Scene.o ./bin/Shape2D.o ./bin/ComplexShape2D.o ./bin/Bullet.o
+	g++ -o main.out ./bin/*.o ${FLAGS}
 
-./bin/test.o: test.cpp
-	g++ -c -o ./bin/test.o test.cpp ${FLAGS}
+./bin/main.o: main.cpp
+	g++ -c -o ./bin/main.o main.cpp ${FLAGS}
 
 ./bin/Window.o: ./core/Window.cpp ./core/Window.h
 	g++ -c -o ./bin/Window.o ./core/Window.cpp ${FLAGS}
