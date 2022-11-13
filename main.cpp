@@ -842,10 +842,10 @@ void createShapes()
     scene.addShape(enemy1);
     scene.addShape(enemy2);
     scene.addShape(enemy3);
-    scene.addShape(wave4);
-    scene.addShape(wave3);
-    scene.addShape(wave2);
-    scene.addShape(wave1);
+    scene.addShape(wave4, true);
+    scene.addShape(wave3, true);
+    scene.addShape(wave2, true);
+    scene.addShape(wave1, true);
 }
 
 int main(int argc, char *argv[])
