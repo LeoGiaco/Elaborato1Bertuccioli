@@ -31,6 +31,7 @@
 #define BOAT_SHADER_PROGRAM "boat"
 #define SEA_SHADER_PROGRAM "sea"
 #define ENEMY_SHADER_PROGRAM "enemy"
+#define ENEMY_BOAT_SHADER_PROGRAM "enemyboat"
 
 char *title = (char *)"Prova";
 
@@ -68,17 +69,19 @@ void createShaderPrograms()
     char *fshaderBoat = (char *)"shaders/fragmentShaderBoat.glsl";
     char *fshaderSea = (char *)"shaders/fragmentShaderWater.glsl";
     char *fshaderEnemy = (char *)"shaders/fragmentShaderEnemy.glsl";
+    char *fshaderEnemyBoat = (char *)"shaders/fragmentShaderEnemyBoat.glsl";
 
     program.createProgram(DEFAULT_SHADER_PROGRAM, vshaderDef, fshaderDef)->setProjectionMatrix(projection);
     program.createProgram(BOAT_SHADER_PROGRAM, vshaderBoat, fshaderBoat)->setProjectionMatrix(projection);
     program.createProgram(SEA_SHADER_PROGRAM, vshaderDef, fshaderSea)->setProjectionMatrix(projection);
     program.createProgram(ENEMY_SHADER_PROGRAM, vshaderDef, fshaderEnemy)->setProjectionMatrix(projection);
+    program.createProgram(ENEMY_BOAT_SHADER_PROGRAM, vshaderBoat, fshaderEnemyBoat)->setProjectionMatrix(projection);
 }
 
 void chooseNextEnemy()
 {
     (*activeEnemy)->setEnabled(false);
-    int i = rand() % 3;
+    int i = 2;
     cout << i << endl;
     switch (i)
     {
@@ -214,6 +217,13 @@ void updateCallback(int v)
     (*activeEnemy)->setRotationAroundAnchor(getWaveTangentAngle(enemyX - waveRelX1));
     (*activeEnemy)->setAnchorX(enemyX - relBoatX);
     (*activeEnemy)->setAnchorY(getWaveHeight(enemyX - waveRelX1) + 30.0f);
+
+    if (*activeEnemy == enemy3)
+    {
+        Shape **s = dynamic_cast<ComplexShape *>((*activeEnemy))->getShape(4);
+        (*activeEnemy)->addUniformValue(VALUE_VEC2, "off", new Value<vec2>(vec2((*s)->getWorldPosition().x / WINDOW_WIDTH, (*s)->getWorldPosition().y / WINDOW_HEIGHT)));
+        (*activeEnemy)->addUniformValue(VALUE_FLOAT, "angle", new Value<float>((*s)->getTotalAngle()));
+    }
 
     vector<tuple<Bullet *, Shape *>> removed;
 
@@ -377,6 +387,7 @@ void createBoat(ComplexShape **boat)
     derivs.push_back(vec2(0.365f, 0.0273f));
     derivs.push_back(vec2(0.7267f, 0.3667f));
 
+    vec4 base_col(0.4f, 0.15f, 0.0f, 1.0f);
     vec4 stripe_col(0.35f, 0.0f, 0.0f, 1.0f);
 
     Shape *s1 = Shape::HermiteCurve(&program, 4, samples, derivs, false, vec4(), true, vec3(0, 0.2f, 0), vec4());
@@ -384,7 +395,7 @@ void createBoat(ComplexShape **boat)
     s1->addUniformValue(VALUE_INT, "stripes", new Value<int>(40));
     s1->addUniformValue(VALUE_FLOAT, "stripe_size", new Value<float>(0.2f));
     s1->addUniformValue(VALUE_FLOAT, "angle", new Value<float>(0.0f));
-    s1->addUniformValue(VALUE_VEC4, "base_color", new Value<vec4>(vec4(0.4f, 0.15f, 0.0f, 1.0f)));
+    s1->addUniformValue(VALUE_VEC4, "base_color", new Value<vec4>(base_col));
     s1->addUniformValue(VALUE_VEC4, "stripe_color", new Value<vec4>(stripe_col));
     s1->setShaderProgram(BOAT_SHADER_PROGRAM);
     s1->setScale(100);
@@ -476,6 +487,7 @@ void createBoat(ComplexShape **boat)
 
 void createEnemies(Shape **e1, Shape **e2, Shape **e3)
 {
+#pragma region enemy1
     vector<vec3> vertices;
     vector<vec4> colors;
 
@@ -506,7 +518,9 @@ void createEnemies(Shape **e1, Shape **e2, Shape **e3)
     (*e1)->setScale(100);
     (*e1)->setY(-20);
     (*e1)->setEnabled(false);
-    ///////////////
+#pragma endregion
+
+#pragma region enemy2
     vertices.clear();
     colors.clear();
 
@@ -609,13 +623,140 @@ void createEnemies(Shape **e1, Shape **e2, Shape **e3)
     (*e2)->addUniformValue(VALUE_INT, "hit", new Value<int>(0));
     (*e2)->setShaderProgram(ENEMY_SHADER_PROGRAM);
     (*e2)->setEnabled(false);
-    ///////////////
-    (*e3) = Shape::circle(&program, 4, vec4(0, 0, 1, 1), vec4(1, 0, 0, 1));
+#pragma endregion
+
+#pragma region enemy3
+    vector<vec3> samples;
+    vector<vec2> derivs;
+
+    samples.push_back(vec3(1.05f, 0.665f, 0));
+    samples.push_back(vec3(0.334f, 0.6f, 0));
+    samples.push_back(vec3(0, 0.6f, 0));
+    samples.push_back(vec3(-0.346f, 0.61f, 0));
+    samples.push_back(vec3(-0.715f, 0.63f, 0));
+    samples.push_back(vec3(-0.67f, 0.1f, 0));
+    samples.push_back(vec3(0.13f, -0.02f, 0));
+    samples.push_back(vec3(0.82f, 0.1f, 0));
+
+    derivs.push_back(vec2(-0.005f, -0.237f));
+    derivs.push_back(vec2(-0.119f, 0.0017f));
+    derivs.push_back(vec2(-0.15f, 0.0013f));
+    derivs.push_back(vec2(0.094f, 0.0037f));
+    derivs.push_back(vec2(0, 0.0407f));
+    derivs.push_back(vec2(0.448f, -0.43f));
+    derivs.push_back(vec2(0.365f, 0.0273f));
+    derivs.push_back(vec2(0.7267f, 0.3667f));
+
+    vec4 base_col(0.1f, 0.1f, 0.2f, 1.0f);
+    vec4 stripe_col(0.2f, 0.2f, 0.3f, 1.0f);
+
+    Shape *s1 = Shape::HermiteCurve(&program, 4, samples, derivs, false, vec4(), true, vec3(0, 0.2f, 0), vec4());
+    s1->addUniformValue(VALUE_VEC2, "off", new Value<vec2>(vec2(BOAT_FIXED_X / WINDOW_WIDTH, 0.5f)));
+    s1->addUniformValue(VALUE_INT, "stripes", new Value<int>(10));
+    s1->addUniformValue(VALUE_FLOAT, "stripe_size", new Value<float>(0.4f));
+    s1->addUniformValue(VALUE_FLOAT, "angle", new Value<float>(0.0f));
+    s1->addUniformValue(VALUE_VEC4, "base_color", new Value<vec4>(base_col));
+    s1->addUniformValue(VALUE_VEC4, "stripe_color", new Value<vec4>(stripe_col));
+    s1->setScale(100);
+    //////////
+    ////////// mainmast 1
+    vector<vec3> verticesRect;
+    vector<vec4> colorsRect;
+
+    verticesRect.push_back(vec3(0, 0, 0));
+    verticesRect.push_back(vec3(0.1f, 0.8f, 0));
+    verticesRect.push_back(vec3(-0.1f, 0.8f, 0));
+    verticesRect.push_back(vec3(-0.1f, -0.8f, 0));
+    verticesRect.push_back(vec3(0.1f, -0.8f, 0));
+    verticesRect.push_back(vec3(0.1f, 0.8f, 0));
+
+    for (int i = 0; i < verticesRect.size(); i++)
+    {
+        colorsRect.push_back(vec4(0.15f, 0.15f, 0.15f, 1.0f));
+    }
+
+    Shape *s2 = new Shape(&program, verticesRect, colorsRect, GL_TRIANGLE_FAN);
+    s2->setScale(80);
+    s2->setPosition(-20, 110);
+    //////////
+    ////////// mainmast 2
+    Shape *s2_2 = new Shape(&program, verticesRect, colorsRect, GL_TRIANGLE_FAN);
+    s2_2->setScale(80, 80);
+    s2_2->setPosition(50, 80);
+    //////////
+    ////////// sail 1
+    samples.clear();
+    derivs.clear();
+
+    samples.push_back(vec3(0.82f, 0.24f, 0));
+    samples.push_back(vec3(0.01f, 0.47f, 0));
+    samples.push_back(vec3(-0.9f, 0.5f, 0));
+    samples.push_back(vec3(-0.72f, 0.29f, 0));
+    samples.push_back(vec3(-0.72f, -0.25f, 0));
+    samples.push_back(vec3(-0.874f, -0.506f, 0));
+    samples.push_back(vec3(0, -0.53f, 0));
+    samples.push_back(vec3(0.82f, -0.29f, 0));
+
+    derivs.push_back(vec2(0, 0.644f));
+    derivs.push_back(vec2(-0.5426f, 0.0174f));
+    derivs.push_back(vec2(-0.268f, 0.011f));
+    derivs.push_back(vec2(-0.005f, -0.3315f));
+    derivs.push_back(vec2(0.002f, -0.215f));
+    derivs.push_back(vec2(-0.5048f, -0.05f));
+    derivs.push_back(vec2(0.6037f, -0.002f));
+    derivs.push_back(vec2(0, 0.644f));
+
+    Shape *s3 = Shape::HermiteCurve(&program, 4, samples, derivs, true, vec4(1, 1, 1, 1), true, vec3(0.6f, 0, 0), vec4(0.8, 0.8, 0.8, 1));
+    s3->setScale(60);
+    s3->setPosition(-20, 140);
+    //////////
+    ////////// sail 2
+    Shape *s3_2 = Shape::HermiteCurve(&program, 4, samples, derivs, true, vec4(1, 1, 1, 1), true, vec3(0.6f, 0, 0), vec4(0.8, 0.8, 0.8, 1));
+    s3_2->setScale(50);
+    s3_2->setPosition(50, 110);
+    //////////
+    ////////// cannon
+    verticesRect.clear();
+    colorsRect.clear();
+
+    verticesRect.push_back(vec3(0.4f, 0.05f, 0));
+    verticesRect.push_back(vec3(0.8f, 0.1f, 0));
+    verticesRect.push_back(vec3(0, 0.1f, 0));
+    verticesRect.push_back(vec3(0, -0.1f, 0));
+    verticesRect.push_back(vec3(0.8f, -0.1f, 0));
+    verticesRect.push_back(vec3(0.8f, 0.1f, 0));
+
+    for (int i = 0; i < verticesRect.size(); i++)
+    {
+        colorsRect.push_back(vec4(0.3f, 0.3f, 0.3f, 1));
+    }
+
+    Shape *s4 = new Shape(&program, verticesRect, colorsRect, GL_TRIANGLE_FAN);
+    s4->setScale(50);
+    s4->setPosition(40, 40);
+    //////////
+    ////////// hole
+    Shape *s5 = Shape::circle(&program, 12, vec4(0, 0, 0, 1), vec4(0, 0, 0, 1));
+    s5->setScale(10);
+    s5->setPosition(40, 40);
+    //////////
+
+    ComplexShape *enemyBoat = new ComplexShape(&program);
+    enemyBoat->addShape(s2);
+    enemyBoat->addShape(s2_2);
+    enemyBoat->addShape(s3);
+    enemyBoat->addShape(s3_2);
+    enemyBoat->addShape(s1);
+    enemyBoat->addShape(s5);
+    enemyBoat->addShape(s4);
+    (*e3) = enemyBoat;
     (*e3)->addUniformValue(VALUE_INT, "hit", new Value<int>(0));
     (*e3)->setShaderProgram(ENEMY_SHADER_PROGRAM);
-    (*e3)->setScale(100);
+    s1->setShaderProgram(ENEMY_BOAT_SHADER_PROGRAM);
+    (*e3)->shiftY(-30);
+    (*e3)->setScaleRelativeToAnchor(-2, 2);
     (*e3)->setEnabled(false);
-    ///////////////
+#pragma endregion
 }
 
 void createSea(Shape **wave0, Shape **wave1, Shape **wave2, Shape **wave3, Shape **wave4)
