@@ -33,7 +33,7 @@
 #define ENEMY_SHADER_PROGRAM "enemy"
 #define ENEMY_BOAT_SHADER_PROGRAM "enemyboat"
 
-char *title = (char *)"Prova";
+char *title = (char *)"Elaborato 1";
 
 GLProgram program;
 Scene scene;
@@ -81,7 +81,7 @@ void createShaderPrograms()
 void chooseNextEnemy()
 {
     (*activeEnemy)->setEnabled(false);
-    int i = 2;
+    int i = rand() % 3;
     cout << i << endl;
     switch (i)
     {
@@ -150,11 +150,11 @@ void fire()
         Shape *proj = Shape::circle(&program, 12, vec4(0, 0, 0, 1), vec4(0.3f, 0.3f, 0.3f, 0.3f));
         proj->setShaderProgram(DEFAULT_SHADER_PROGRAM);
         proj->setScale(7.5);
-        proj->setAnchorPosition((*boat->getShape(4))->getWorldPosition());
+        proj->setAnchorPosition((*boat->getShape(4))->getCombinedPosition());
         scene.addShape(proj);
 
-        float angle = (*boat->getShape(4))->getCenterAngle();
-        if (dir < 0)
+        float angle = (*boat->getShape(4))->getCenterAngle(); // The shape with index 4 is the cannon.
+        if (dir < 0)                                          // In case the ship is flipped.
             angle = radians(180.0f) - angle;
 
         Bullet *b = new Bullet(BULLET_SPEED, angle + (*boat->getShape(4))->getAnchorAngle(), Y_FALL);
@@ -179,20 +179,20 @@ void updateCallback(int v)
     if (reload > 0)
         reload -= DELTA_T;
 
-    waveRelX0 -= 60 * DELTA_T;
+    waveRelX0 -= 60 * DELTA_T; // Wave movement.
     waveRelX1 -= 30 * DELTA_T;
     waveRelX2 -= 80 * DELTA_T;
     waveRelX3 -= 140 * DELTA_T;
     waveRelX4 -= 190 * DELTA_T;
 
     boatMovementDeltaX = moving * 200 * DELTA_T;
-    if (enemyX - (relBoatX + boatMovementDeltaX) < MIN_ENEMY_X)
+    if (enemyX - (relBoatX + boatMovementDeltaX) < MIN_ENEMY_X) // The boat can't get too close to the enemy.
     {
         boatMovementDeltaX = enemyX - MIN_ENEMY_X - relBoatX;
     }
     relBoatX += boatMovementDeltaX;
 
-    float angle = getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRelX1);
+    float angle = getWaveTangentAngle(BOAT_FIXED_X + relBoatX - waveRelX1); // The position of the wave is important to find the angle and height of it.
     float wHeight = getWaveHeight(BOAT_FIXED_X + relBoatX - waveRelX1) - 10.0f;
 
     (*(boat->getShape(2)))->addUniformValue(VALUE_VEC2, "off", new Value<vec2>(vec2(BOAT_FIXED_X / WINDOW_WIDTH, wHeight / WINDOW_HEIGHT)));
@@ -209,19 +209,19 @@ void updateCallback(int v)
     }
 
     wave0->setX(-MOD(relBoatX - waveRelX0, WAVE_WIDTH)); // The wave moves in the negative x.
-    wave1->setX(-MOD(relBoatX - waveRelX1, WAVE_WIDTH)); // The wave moves in the negative x.
+    wave1->setX(-MOD(relBoatX - waveRelX1, WAVE_WIDTH));
     wave2->setX(-MOD(relBoatX - waveRelX2, WAVE_WIDTH));
     wave3->setX(-MOD(relBoatX - waveRelX3, WAVE_WIDTH));
     wave4->setX(-MOD(relBoatX - waveRelX4, WAVE_WIDTH));
 
-    (*activeEnemy)->setRotationAroundAnchor(getWaveTangentAngle(enemyX - waveRelX1));
+    (*activeEnemy)->setRotationAroundAnchor(getWaveTangentAngle(enemyX - waveRelX1)); // The enemy also changes angle on the wave.
     (*activeEnemy)->setAnchorX(enemyX - relBoatX);
     (*activeEnemy)->setAnchorY(getWaveHeight(enemyX - waveRelX1) + 30.0f);
 
-    if (*activeEnemy == enemy3)
+    if (*activeEnemy == enemy3) // Enemy 3 is the boat.
     {
-        Shape **s = dynamic_cast<ComplexShape *>((*activeEnemy))->getShape(4);
-        (*activeEnemy)->addUniformValue(VALUE_VEC2, "off", new Value<vec2>(vec2((*s)->getWorldPosition().x / WINDOW_WIDTH, (*s)->getWorldPosition().y / WINDOW_HEIGHT)));
+        Shape **s = dynamic_cast<ComplexShape *>((*activeEnemy))->getShape(4); // Shape 4 is the boat itself.
+        (*activeEnemy)->addUniformValue(VALUE_VEC2, "off", new Value<vec2>(vec2((*s)->getCombinedPosition().x / WINDOW_WIDTH, (*s)->getCombinedPosition().y / WINDOW_HEIGHT)));
         (*activeEnemy)->addUniformValue(VALUE_FLOAT, "angle", new Value<float>((*s)->getTotalAngle()));
     }
 
@@ -237,16 +237,14 @@ void updateCallback(int v)
         p->move(b->getNewSpeed(DELTA_T) * DELTA_T);
         p->shiftX(-boatMovementDeltaX);
 
-        if (p->getWorldPosition().y <= 0)
+        if (p->getCombinedPosition().y <= 0)
         {
-            cout << "OUT " << endl;
-            removed.push_back(tp);
+            removed.push_back(tp); // Adds elements to be removed to a list for later usage.
             p->setEnabled(false);
         }
 
         if (p->isColliding((*activeEnemy)))
         {
-            cout << "HIT " << endl;
             removed.push_back(tp);
             p->setEnabled(false);
 
@@ -258,7 +256,7 @@ void updateCallback(int v)
             else
             {
                 (*activeEnemy)->addUniformValue(VALUE_INT, "hit", new Value<int>(1));
-                glutTimerFunc(200, enemyReturnsNormal, 0);
+                glutTimerFunc(200, enemyReturnsNormal, 0); // Enemy appears hit only for a fraction of time.
             }
         }
 
@@ -784,7 +782,7 @@ void createSea(Shape **wave0, Shape **wave1, Shape **wave2, Shape **wave3, Shape
     (*wave0)->setShaderProgram(SEA_SHADER_PROGRAM);
     (*wave0)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
     (*wave0)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f + WAVES_DIST);
-
+    /////////////////////
     colors.clear();
     for (int i = 0; i < vertices.size(); i++)
     {
@@ -795,7 +793,7 @@ void createSea(Shape **wave0, Shape **wave1, Shape **wave2, Shape **wave3, Shape
     (*wave1)->setShaderProgram(SEA_SHADER_PROGRAM);
     (*wave1)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
     (*wave1)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
-
+    /////////////////////
     colors.clear();
     for (int i = 0; i < vertices.size(); i++)
     {
@@ -806,7 +804,7 @@ void createSea(Shape **wave0, Shape **wave1, Shape **wave2, Shape **wave3, Shape
     (*wave2)->setShaderProgram(SEA_SHADER_PROGRAM);
     (*wave2)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
     (*wave2)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - WAVES_DIST);
-
+    /////////////////////
     colors.clear();
     for (int i = 0; i < vertices.size(); i++)
     {
@@ -817,7 +815,7 @@ void createSea(Shape **wave0, Shape **wave1, Shape **wave2, Shape **wave3, Shape
     (*wave3)->setShaderProgram(SEA_SHADER_PROGRAM);
     (*wave3)->setScale(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT);
     (*wave3)->setAnchorPosition(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - 2 * WAVES_DIST);
-
+    /////////////////////
     colors.clear();
     for (int i = 0; i < vertices.size(); i++)
     {

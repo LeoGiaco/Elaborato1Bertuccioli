@@ -93,6 +93,8 @@ GLProgramInstance *GLProgram::createProgram(std::string programName, char *verte
 	glAttachShader(programId, fragmentShaderId);
 	glLinkProgram(programId);
 
+	//////////////
+
 	GLProgramInstance *instance = new GLProgramInstance(programId);
 
 	this->programs.insert({programName, instance});

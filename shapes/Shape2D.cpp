@@ -134,7 +134,7 @@ vec3 Shape2D::getAnchorPosition()
 	return anchorPosition;
 }
 
-vec3 Shape2D::getWorldPosition()
+vec3 Shape2D::getCombinedPosition()
 {
 	calculateModelIfUpdated();
 	return vec3(model * vec4(0, 0, 0, 1));

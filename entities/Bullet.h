@@ -9,5 +9,6 @@ private:
 public:
     Bullet(float speed, float angle, float yGrav);
 
+    // Calculates the new speed after x milliseconds have passed.
     vec3 getNewSpeed(float deltaT);
 };

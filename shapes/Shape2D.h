@@ -73,8 +73,10 @@ protected:
 public:
     Shape2D(GLProgram *program, vector<vec3> vertices, vector<vec4> colors, GLenum drawMode, bool doDynamicDraw = false);
 
+    // Adds a value to the list of uniform variables to be passed for the shaders.
     virtual void addUniformValue(int valueType, string uniformName, ValueBase *value);
 
+    // Sets the chosen shader program to be used when drawing the shape.
     virtual void setShaderProgram(string shaderName);
 
     // Returns the angle of the shape around its center.
@@ -84,10 +86,14 @@ public:
     // Returns the combined angle of the shape. If the rotation is locked, returns only the center angle.
     virtual float getTotalAngle();
 
+    // Returns the value of the attribute position.
     virtual vec3 getPosition();
+
+    // Returns the value of the attribute anchorPosition.
     virtual vec3 getAnchorPosition();
 
-    virtual vec3 getWorldPosition();
+    // Returns the position of the shape, accounting for angles and positions.
+    virtual vec3 getCombinedPosition();
 
     // Sets the scale of the shape.
     virtual void setScale(float scale);
@@ -108,10 +114,14 @@ public:
     // Sets the position of the shape relative to the anchor.
     virtual void setPosition(vec3 pos);
 
+    // Sets the x coordinate of the position of the shape.
     virtual void setX(float x);
+    // Sets the y coordinate of the position of the shape.
     virtual void setY(float y);
 
+    // Sets the x coordinate of the anchor position of the shape.
     virtual void setAnchorX(float x);
+    // Sets the y coordinate of the anchor position of the shape.
     virtual void setAnchorY(float y);
 
     // Sets the anchor position of the shape.
@@ -185,7 +195,10 @@ public:
     // Draws the shape.
     virtual void draw();
 
+    // Returns a vector with the coordinates of the box containing the shape.
+    // The vector contains (xMin, yMin) and (xMax, yMax).
     virtual vector<vec3> getBoxCollider();
 
+    // Checks whether two shapes are intersecting with each other.
     bool isColliding(Shape2D *other);
 } Shape;

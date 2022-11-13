@@ -1,2 +1,1 @@
-TODO: creare un ultimo nemico
-TODO: aggiungere commenti un po' ovunque
+Trovare il modo di disegnare i proiettili almeno dietro al mare.

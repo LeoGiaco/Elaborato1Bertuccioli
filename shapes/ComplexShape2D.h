@@ -8,12 +8,16 @@ private:
 public:
     ComplexShape2D(GLProgram *program);
 
+    // Adds a sub-shape.
     void addShape(Shape2D *shape);
 
+    // Adds a value to the list of uniform variables to be passed for the shaders of each sub-shape.
     virtual void addUniformValue(int valueType, string uniformName, ValueBase *value);
 
+    // Sets the chosen shader program to be used when drawing each sub-shape.
     virtual void setShaderProgram(string shaderName);
 
+    // Returns the sub-shape with the given index.
     Shape **getShape(int shapeNum);
 
     // Sets the scale of all sub-shapes.
@@ -40,10 +44,16 @@ public:
     // Should not be used in most cases in favor of setAnchorPosition.
     void setPosition(vec3 pos) override;
 
+    // Sets the x of the position of all sub-shapes relative to their anchor.
+    // Should not be used in most cases in favor of setAnchorX.
     void setX(float x);
+    // Sets the y of the position of all sub-shapes relative to their anchor.
+    // Should not be used in most cases in favor of setAnchorX.
     void setY(float y);
 
+    // Sets the x of the anchor position of all sub-shapes relative to their anchor.
     void setAnchorX(float x);
+    // Sets the y of the anchor position of all sub-shapes relative to their anchor.
     void setAnchorY(float y);
 
     // Sets the anchor position of all sub-shapes.
@@ -114,10 +124,13 @@ public:
     // Recalculates the model of all sub-shapes.
     void calculateModelIfUpdated() override;
 
+    // Determines whether the shape has to be drawn on screen. Doesn't modify the value for the sub-shapes.
     void setEnabled(bool enabled);
 
+    // Returns a vector with the coordinates of the box containing all of the sub-shapes.
+    // The vector contains (xMin, yMin) and (xMax, yMax).
     vector<vec3> getBoxCollider();
 
     // Draws all sub-shapes.
-    virtual void draw() override;
+    virtual void draw();
 } ComplexShape;
